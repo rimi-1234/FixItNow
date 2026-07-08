@@ -26,7 +26,10 @@ const getTechnicianById = catchAsync(async (req: Request, res: Response) => {
 });
 
 const updateProfile = catchAsync(async (req: Request, res: Response) => {
-  sendResponse(res, { statusCode: 200, success: true, message: "Profile updated successfully", data: {} });
+  const user = req.user;
+  const result = await TechnicianServices.updateProfile(user.id, req.body);
+  
+  sendResponse(res, { statusCode: 200, success: true, message: "Profile updated successfully", data: result });
 });
 
 const updateAvailability = catchAsync(async (req: Request, res: Response) => {

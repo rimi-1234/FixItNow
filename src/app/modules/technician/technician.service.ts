@@ -1,4 +1,5 @@
 import prisma from '../../../lib/prisma.js';
+import { ITechnicianUpdateProfilePayload } from './technician.interface.js';
 
 const getAllTechnicians = async (filters: any) => {
   const { skill, minExperience, search } = filters;
@@ -52,7 +53,29 @@ const getTechnicianById = async (id: string) => {
   return technician;
 };
 
+const updateProfile = async (id: string, payload: ITechnicianUpdateProfilePayload) => {
+  const profile = await prisma.technicianProfile.findUnique({
+    where: { userId: id }
+  });
+
+  if (!profile) {
+    // create if not exists
+    return prisma.technicianProfile.create({
+      data: {
+        userId: id,
+        ...payload
+      }
+    });
+  }
+
+  return prisma.technicianProfile.update({
+    where: { userId: id },
+    data: payload
+  });
+};
+
 export const TechnicianServices = {
   getAllTechnicians,
-  getTechnicianById
+  getTechnicianById,
+  updateProfile
 };
