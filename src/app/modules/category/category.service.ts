@@ -10,6 +10,13 @@ const getAllCategories = async () => {
   });
 };
 
+const createCategory = async (payload: any) => {
+  return prisma.category.create({
+    data: payload
+  });
+};
+
 export const CategoryServices = {
-  getAllCategories
+  getAllCategories,
+  createCategory
 };

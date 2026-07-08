@@ -1,18 +1,17 @@
-import { Category, PrismaClient, Role } from "@prisma/client";
+import { Category, Role } from "@prisma/client";
 import bcrypt from "bcryptjs";
-
-const prisma = new PrismaClient();
+import prisma from "../../src/lib/prisma.js";
 
 async function main() {
   console.log("Starting database seed...");
 
-  const adminPassword = await bcrypt.hash("admin123", 12);
+  const adminPassword = await bcrypt.hash("Admin@1234", 12);
 
   const admin = await prisma.user.upsert({
-    where: { email: "admin@rentnest.com" },
+    where: { email: "admin@fixitnow.com" },
     update: {},
     create: {
-      email: "admin@rentnest.com",
+      email: "admin@fixitnow.com",
       password: adminPassword,
       role: Role.ADMIN,
       status: "ACTIVE",
@@ -121,7 +120,7 @@ async function main() {
 
   console.log("\nSeed completed successfully!");
   console.log("\nDefault accounts:");
-  console.log("  Admin:      admin@rentnest.com / admin123");
+  console.log("  Admin:      admin@fixitnow.com / Admin@1234");
   console.log("  Technician: technician@fixitnow.com / tech123");
   console.log("  Customer:   customer@fixitnow.com / customer123");
 }
