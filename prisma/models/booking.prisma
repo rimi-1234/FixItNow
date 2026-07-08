@@ -12,6 +12,7 @@ model Booking {
   technician User     @relation("TechnicianBookings", fields: [technicianId], references: [id], onDelete: Cascade)
   service    Service  @relation(fields: [serviceId], references: [id], onDelete: Cascade)
   payment    Payment?
+  review     Review?
 
   @@map("bookings")
 }

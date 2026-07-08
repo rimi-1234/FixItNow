@@ -1,5 +1,6 @@
 model Review {
   id           String   @id @default(uuid())
+  bookingId    String   @unique
   customerId   String
   technicianId String
   rating       Int
@@ -7,9 +8,9 @@ model Review {
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
 
-  customer   User @relation("ReviewsGiven", fields: [customerId], references: [id], onDelete: Cascade)
-  technician User @relation("ReviewsReceived", fields: [technicianId], references: [id], onDelete: Cascade)
+  booking    Booking @relation(fields: [bookingId], references: [id], onDelete: Cascade)
+  customer   User    @relation("ReviewsGiven", fields: [customerId], references: [id], onDelete: Cascade)
+  technician User    @relation("ReviewsReceived", fields: [technicianId], references: [id], onDelete: Cascade)
 
-  @@unique([customerId, technicianId])
   @@map("reviews")
 }
