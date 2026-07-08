@@ -15,7 +15,7 @@ const getAllTechnicians = catchAsync(async (req: Request, res: Response) => {
 });
 
 const getTechnicianById = catchAsync(async (req: Request, res: Response) => {
-  const result = await TechnicianServices.getTechnicianById(req.params.id);
+  const result = await TechnicianServices.getTechnicianById(req.params.id as string);
   
   sendResponse(res, {
     statusCode: 200,
