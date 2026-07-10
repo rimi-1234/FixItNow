@@ -1,26 +1,41 @@
+import { Prisma } from '@prisma/client';
 import prisma from '../../../lib/prisma.js';
 import { IServiceFilters, IServicePayload, IServiceUpdatePayload } from './service.interface.js';
 
 const getAllServices = async (filters: IServiceFilters) => {
   const { type, location, minRating, minPrice, maxPrice, search } = filters;
 
-  const services = await prisma.service.findMany({
-    where: {
-      ...(search && {
-        OR: [
-          { name: { contains: search, mode: 'insensitive' } },
-          { description: { contains: search, mode: 'insensitive' } },
-        ],
-      }),
-      category: type ? { name: { contains: type, mode: 'insensitive' } } : undefined,
-      technician: location
-        ? { technicianProfile: { is: { location: { contains: location, mode: 'insensitive' } } } }
-        : undefined,
-      price: {
-        gte: minPrice !== undefined ? Number(minPrice) : undefined,
-        lte: maxPrice !== undefined ? Number(maxPrice) : undefined,
-      },
+  const where: Prisma.ServiceWhereInput = {
+    ...(search
+      ? {
+          OR: [
+            { name: { contains: search, mode: Prisma.QueryMode.insensitive } },
+            { description: { contains: search, mode: Prisma.QueryMode.insensitive } },
+          ],
+        }
+      : {}),
+    ...(type
+      ? { category: { name: { contains: type, mode: Prisma.QueryMode.insensitive } } }
+      : {}),
+    ...(location
+      ? {
+          technician: {
+            technicianProfile: {
+              is: {
+                location: { contains: location, mode: Prisma.QueryMode.insensitive },
+              },
+            },
+          },
+        }
+      : {}),
+    price: {
+      ...(minPrice !== undefined ? { gte: Number(minPrice) } : {}),
+      ...(maxPrice !== undefined ? { lte: Number(maxPrice) } : {}),
     },
+  };
+
+  const services = await prisma.service.findMany({
+    where,
     include: {
       category: true,
       technician: {
