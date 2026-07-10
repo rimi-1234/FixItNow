@@ -5,7 +5,7 @@ import { IServiceFilters, IServicePayload, IServiceUpdatePayload } from './servi
 const getAllServices = async (filters: IServiceFilters) => {
   const { type, location, minRating, minPrice, maxPrice, search } = filters;
 
-  const where: Prisma.ServiceWhereInput = {
+  const where = {
     ...(search
       ? {
           OR: [
@@ -32,7 +32,7 @@ const getAllServices = async (filters: IServiceFilters) => {
       ...(minPrice !== undefined ? { gte: Number(minPrice) } : {}),
       ...(maxPrice !== undefined ? { lte: Number(maxPrice) } : {}),
     },
-  };
+  } as Prisma.ServiceWhereInput;
 
   const services = await prisma.service.findMany({
     where,
