@@ -14,11 +14,11 @@ const getAllUsers = catchAsync(async (req: Request, res: Response) => {
 });
 
 const updateUserStatus = catchAsync(async (req: Request, res: Response) => {
-  const { status } = req.body;
+  const { status } = req.body as { status?: string };
   if (!status || !['ACTIVE', 'BANNED'].includes(status)) {
     throw Object.assign(new Error('status must be ACTIVE or BANNED'), { statusCode: 400 });
   }
-  const result = await AdminServices.updateUserStatus(req.params.id, status);
+  const result = await AdminServices.updateUserStatus(req.params.id as string, status as 'ACTIVE' | 'BANNED');
   sendResponse(res, {
     statusCode: 200,
     success: true,

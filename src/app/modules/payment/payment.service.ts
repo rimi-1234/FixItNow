@@ -2,9 +2,7 @@ import Stripe from 'stripe';
 import prisma from '../../../lib/prisma.js';
 import config from '../../../config/index.js';
 
-const stripe = new Stripe(config.stripe_secret_key, {
-  apiVersion: '2025-06-30.basil',
-});
+const stripe = new Stripe(config.stripe_secret_key as string);
 
 const createPaymentIntent = async (customerId: string, bookingId: string) => {
   // Verify the booking exists & is ACCEPTED
@@ -47,7 +45,7 @@ const createPaymentIntent = async (customerId: string, bookingId: string) => {
   };
 };
 
-const confirmPayment = async (rawBody: Buffer, sig: string) => {
+const confirmPayment = async (rawBody: Buffer | string, sig: string) => {
   let event: Stripe.Event;
 
   try {

@@ -73,8 +73,6 @@ const updateProfile = async (id: string, payload: ITechnicianUpdateProfilePayloa
 };
 
 const updateAvailability = async (technicianId: string, availability: string[]) => {
-  // Stored as JSON in bio field or we track it separately
-  // For now we upsert a profile with availability note
   return prisma.technicianProfile.upsert({
     where: { userId: technicianId },
     create: { userId: technicianId, skills: [], availability },
