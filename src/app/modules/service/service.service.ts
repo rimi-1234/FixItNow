@@ -39,7 +39,12 @@ const getAllServices = async (filters: IServiceFilters) => {
     const { reviewsReceived, ...technicianRest } = service.technician;
     const reviewCount = reviewsReceived.length;
     const averageRating = reviewCount
-      ? Number((reviewsReceived.reduce((sum, r) => sum + r.rating, 0) / reviewCount).toFixed(2))
+      ? Number(
+          (
+            reviewsReceived.reduce((sum: number, r: { rating: number }) => sum + r.rating, 0) /
+            reviewCount
+          ).toFixed(2)
+        )
       : 0;
 
     return {
