@@ -21,7 +21,8 @@ const registerUser = async (payload: IRegisterPayload) => {
           skills: profileData.skills || [],
           experience: profileData.experience || 0,
           hourlyRate: profileData.hourlyRate || 0,
-          bio: profileData.bio || null
+          bio: profileData.bio || null,
+          location: profileData.location || null
         }
       } : undefined
     },

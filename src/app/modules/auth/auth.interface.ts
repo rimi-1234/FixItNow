@@ -13,4 +13,5 @@ export interface IRegisterPayload {
   experience?: number;
   hourlyRate?: number;
   bio?: string;
+  location?: string;
 }

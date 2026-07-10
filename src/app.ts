@@ -9,6 +9,13 @@ import { swaggerSpec } from "./app/docs/swagger.js";
 const app: Application = express();
 
 app.use(cors());
+
+// Stripe webhooks require the raw, unparsed request body to verify the
+// signature — this MUST be registered before the global JSON body parser,
+// otherwise the body will already be consumed/parsed as JSON by the time
+// it reaches the payment route.
+app.use("/api/payments/confirm", express.raw({ type: "application/json" }));
+
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 

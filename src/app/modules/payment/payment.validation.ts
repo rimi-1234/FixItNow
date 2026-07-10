@@ -1,0 +1,17 @@
+import { z } from 'zod';
+import { PaymentProvider } from '@prisma/client';
+
+const createPaymentValidationSchema = z.object({
+  body: z.object({
+    bookingId: z.string({ message: 'bookingId is required' }).uuid({ message: 'Invalid bookingId' }),
+    provider: z
+      .enum([PaymentProvider.STRIPE, PaymentProvider.SSLCOMMERZ], {
+        message: `provider must be one of: ${Object.values(PaymentProvider).join(', ')}`,
+      })
+      .optional(),
+  }),
+});
+
+export const PaymentValidation = {
+  createPaymentValidationSchema,
+};

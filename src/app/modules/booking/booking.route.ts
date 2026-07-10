@@ -10,5 +10,6 @@ const router = express.Router();
 router.post('/', auth(Role.CUSTOMER), validateRequest(BookingValidation.createBookingValidationSchema), BookingControllers.createBooking);
 router.get('/', auth(Role.CUSTOMER), BookingControllers.getUserBookings);
 router.get('/:id', auth(Role.CUSTOMER), BookingControllers.getBookingDetails);
+router.patch('/:id/cancel', auth(Role.CUSTOMER), BookingControllers.cancelBooking);
 
 export const BookingRoutes = router;

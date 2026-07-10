@@ -1,7 +1,27 @@
+import { Prisma } from '@prisma/client';
 import prisma from '../../../lib/prisma.js';
+import { IAdminBookingFilters, IAdminUserFilters } from './admin.interface.js';
+import { USER_SEARCHABLE_FIELDS } from './admin.constant.js';
 
-const getAllUsers = async () => {
+const getAllUsers = async (filters: IAdminUserFilters) => {
+  const { role, status, search } = filters;
+
+  const andConditions: Prisma.UserWhereInput[] = [];
+
+  if (role) andConditions.push({ role });
+  if (status) andConditions.push({ status });
+  if (search) {
+    andConditions.push({
+      OR: USER_SEARCHABLE_FIELDS.map((field) => ({
+        [field]: { contains: search, mode: 'insensitive' },
+      })),
+    });
+  }
+
+  const where: Prisma.UserWhereInput = andConditions.length ? { AND: andConditions } : {};
+
   return prisma.user.findMany({
+    where,
     select: {
       id: true,
       email: true,
@@ -31,8 +51,11 @@ const updateUserStatus = async (userId: string, status: 'ACTIVE' | 'BANNED') => 
   });
 };
 
-const getAllBookings = async () => {
+const getAllBookings = async (filters: IAdminBookingFilters) => {
+  const { status } = filters;
+
   return prisma.booking.findMany({
+    where: status ? { status } : {},
     include: {
       customer: { select: { id: true, email: true } },
       technician: { select: { id: true, email: true, technicianProfile: true } },

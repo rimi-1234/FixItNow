@@ -18,8 +18,14 @@ const getBookingDetails = catchAsync(async (req: Request, res: Response) => {
   sendResponse(res, { statusCode: 200, success: true, message: "Booking details retrieved successfully", data: result });
 });
 
+const cancelBooking = catchAsync(async (req: Request, res: Response) => {
+  const result = await BookingServices.cancelBooking(req.params.id as string, req.user.id);
+  sendResponse(res, { statusCode: 200, success: true, message: "Booking cancelled successfully", data: result });
+});
+
 export const BookingControllers = {
   createBooking,
   getUserBookings,
-  getBookingDetails
+  getBookingDetails,
+  cancelBooking,
 };

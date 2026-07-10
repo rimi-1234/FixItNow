@@ -1,21 +1,32 @@
 import prisma from '../../../lib/prisma.js';
-import { ITechnicianUpdateProfilePayload } from './technician.interface.js';
+import { ITechnicianFilters, ITechnicianUpdateProfilePayload } from './technician.interface.js';
 import { BookingStatus } from '@prisma/client';
 
-const getAllTechnicians = async (filters: any) => {
-  const { skill, minExperience, search } = filters;
+const withAverageRating = <T extends { reviewsReceived: { rating: number }[] }>(technician: T) => {
+  const { reviewsReceived, ...rest } = technician;
+  const reviewCount = reviewsReceived.length;
+  const averageRating = reviewCount
+    ? Number((reviewsReceived.reduce((sum, r) => sum + r.rating, 0) / reviewCount).toFixed(2))
+    : 0;
 
-  return prisma.user.findMany({
+  return { ...rest, averageRating, reviewCount };
+};
+
+const getAllTechnicians = async (filters: ITechnicianFilters) => {
+  const { skill, location, minExperience, minRating, search } = filters;
+
+  const technicians = await prisma.user.findMany({
     where: {
       role: 'TECHNICIAN',
       status: 'ACTIVE',
       ...(search && {
-        email: { contains: search, mode: 'insensitive' }
+        email: { contains: search, mode: 'insensitive' },
       }),
       technicianProfile: {
         ...(skill && { skills: { has: skill } }),
-        ...(minExperience && { experience: { gte: Number(minExperience) } })
-      }
+        ...(location && { location: { contains: location, mode: 'insensitive' } }),
+        ...(minExperience !== undefined && { experience: { gte: Number(minExperience) } }),
+      },
     },
     select: {
       id: true,
@@ -24,10 +35,22 @@ const getAllTechnicians = async (filters: any) => {
       createdAt: true,
       technicianProfile: true,
       services: {
-        include: { category: true }
-      }
-    }
+        include: { category: true },
+      },
+      reviewsReceived: {
+        select: { rating: true },
+      },
+    },
+    orderBy: { createdAt: 'desc' },
   });
+
+  const withRatings = technicians.map(withAverageRating);
+
+  if (minRating !== undefined) {
+    return withRatings.filter((t) => t.averageRating >= Number(minRating));
+  }
+
+  return withRatings;
 };
 
 const getTechnicianById = async (id: string) => {
@@ -40,35 +63,42 @@ const getTechnicianById = async (id: string) => {
       createdAt: true,
       technicianProfile: true,
       services: {
-        include: { category: true }
+        include: { category: true },
       },
       reviewsReceived: {
         include: {
           customer: { select: { id: true, email: true } },
-          booking: { select: { id: true, service: true } }
-        }
-      }
-    }
+          booking: { select: { id: true, service: true } },
+        },
+      },
+    },
   });
 
   if (!technician) throw Object.assign(new Error('Technician not found'), { statusCode: 404 });
-  return technician;
+
+  const { reviewsReceived, ...rest } = technician;
+  const reviewCount = reviewsReceived.length;
+  const averageRating = reviewCount
+    ? Number((reviewsReceived.reduce((sum, r) => sum + r.rating, 0) / reviewCount).toFixed(2))
+    : 0;
+
+  return { ...rest, reviews: reviewsReceived, averageRating, reviewCount };
 };
 
 const updateProfile = async (id: string, payload: ITechnicianUpdateProfilePayload) => {
   const profile = await prisma.technicianProfile.findUnique({
-    where: { userId: id }
+    where: { userId: id },
   });
 
   if (!profile) {
     return prisma.technicianProfile.create({
-      data: { userId: id, ...payload }
+      data: { userId: id, ...payload },
     });
   }
 
   return prisma.technicianProfile.update({
     where: { userId: id },
-    data: payload
+    data: payload,
   });
 };
 

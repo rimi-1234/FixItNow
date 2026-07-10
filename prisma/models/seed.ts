@@ -36,6 +36,7 @@ async function main() {
           experience: 5,
           hourlyRate: 25,
           bio: "Experienced home service technician with 5+ years of expertise.",
+          location: "Dhaka",
         },
       },
     },

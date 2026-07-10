@@ -1,5 +1,6 @@
 import prisma from '../../../lib/prisma.js';
 import { IBookingCreatePayload } from './booking.interface.js';
+import { BookingStatus } from '@prisma/client';
 
 const createBooking = async (customerId: string, payload: IBookingCreatePayload) => {
   // Check if technician exists and is a technician
@@ -71,8 +72,40 @@ const getBookingDetails = async (bookingId: string, customerId: string) => {
   return booking;
 };
 
+// Customers can cancel a booking at any point before it reaches IN_PROGRESS status.
+const CANCELLABLE_STATUSES: BookingStatus[] = ['REQUESTED', 'ACCEPTED', 'PAID'];
+
+const cancelBooking = async (bookingId: string, customerId: string) => {
+  const booking = await prisma.booking.findUnique({
+    where: { id: bookingId },
+    include: { payment: true },
+  });
+
+  if (!booking) throw Object.assign(new Error('Booking not found'), { statusCode: 404 });
+  if (booking.customerId !== customerId) {
+    throw Object.assign(new Error('You do not have permission to cancel this booking'), { statusCode: 403 });
+  }
+  if (!CANCELLABLE_STATUSES.includes(booking.status)) {
+    throw Object.assign(
+      new Error(`Booking cannot be cancelled once it is ${booking.status}`),
+      { statusCode: 400 }
+    );
+  }
+
+  return prisma.booking.update({
+    where: { id: bookingId },
+    data: { status: 'CANCELLED' },
+    include: {
+      technician: { select: { id: true, email: true } },
+      service: true,
+      payment: true,
+    },
+  });
+};
+
 export const BookingServices = {
   createBooking,
   getUserBookings,
-  getBookingDetails
+  getBookingDetails,
+  cancelBooking,
 };

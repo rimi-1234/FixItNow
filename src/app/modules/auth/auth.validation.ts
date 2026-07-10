@@ -17,6 +17,7 @@ const registerValidationSchema = z.object({
     experience: z.number().int().nonnegative().optional(),
     hourlyRate: z.number().nonnegative().optional(),
     bio: z.string().optional(),
+    location: z.string().optional(),
   })
     .refine(
       (data) => {

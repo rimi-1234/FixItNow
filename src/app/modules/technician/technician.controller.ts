@@ -36,9 +36,6 @@ const updateProfile = catchAsync(async (req: Request, res: Response) => {
 
 const updateAvailability = catchAsync(async (req: Request, res: Response) => {
   const { availability } = req.body;
-  if (!Array.isArray(availability)) {
-    throw Object.assign(new Error('availability must be an array of time slot strings'), { statusCode: 400 });
-  }
   const result = await TechnicianServices.updateAvailability(req.user.id, availability);
   sendResponse(res, {
     statusCode: 200,

@@ -9,8 +9,8 @@ const createCategoryValidationSchema = z.object({
 
 const updateCategoryValidationSchema = z.object({
   body: z.object({
-    name: z.string().optional(),
-    slug: z.string().optional(),
+    name: z.string().min(1).optional(),
+    slug: z.string().min(1).optional(),
   }),
 });
 
