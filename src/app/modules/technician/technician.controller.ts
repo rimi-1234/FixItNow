@@ -56,10 +56,13 @@ const getTechnicianBookings = catchAsync(async (req: Request, res: Response) => 
 });
 
 const updateBookingStatus = catchAsync(async (req: Request, res: Response) => {
-  const { status } = req.body as { status?: string };
+  const status = req.body?.status as string | undefined;
   const validStatuses: BookingStatus[] = ['ACCEPTED', 'DECLINED', 'IN_PROGRESS', 'COMPLETED'];
   if (!status || !(validStatuses as string[]).includes(status)) {
-    throw Object.assign(new Error(`status must be one of: ${validStatuses.join(', ')}`), { statusCode: 400 });
+    throw Object.assign(
+      new Error(`status must be one of: ${validStatuses.join(', ')}. Send JSON body like { "status": "ACCEPTED" }`),
+      { statusCode: 400 }
+    );
   }
   const result = await TechnicianServices.updateBookingStatus(req.user.id, req.params.id as string, status as BookingStatus);
   sendResponse(res, {
