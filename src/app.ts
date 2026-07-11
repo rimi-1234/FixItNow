@@ -5,6 +5,7 @@ import router from "./app/routes/index.js";
 import { globalErrorHandler } from "./middlewares/globalErrorHandler.js";
 import { notFound } from "./middlewares/notFound.js";
 import { swaggerSpec } from "./app/docs/swagger.js";
+import { PaymentServices } from "./app/modules/payment/payment.service.js";
 
 const app: Application = express();
 
@@ -43,6 +44,50 @@ app.get("/health", (_req: Request, res: Response) => {
       docs: "/api-docs",
     },
   });
+});
+
+// Stripe / SSLCommerz browser redirects (no frontend required for local testing)
+app.get("/payment/success", async (req: Request, res: Response) => {
+  const bookingIdQuery = typeof req.query.bookingId === "string" ? req.query.bookingId : "";
+  const sessionId = typeof req.query.session_id === "string" ? req.query.session_id : "";
+
+  let synced = false;
+  let bookingId = bookingIdQuery;
+
+  // Auto-mark PAID by verifying the Checkout Session with Stripe
+  // (works even if the webhook was missed locally).
+  if (sessionId) {
+    try {
+      const result = await PaymentServices.syncCheckoutSessionPaid(sessionId);
+      synced = result.synced;
+      if (result.bookingId) bookingId = result.bookingId;
+    } catch (err) {
+      console.error("Failed to sync Stripe Checkout session:", err);
+    }
+  }
+
+  res.status(200).send(`<!doctype html><html><body style="font-family:sans-serif;padding:2rem">
+    <h1>${synced ? "Payment successful" : "Payment received"}</h1>
+    <p>Booking ID: ${bookingId || "n/a"}</p>
+    <p>Database status: ${synced ? "PAID / COMPLETED" : "pending webhook sync"}</p>
+    <p>You can close this tab.</p>
+  </body></html>`);
+});
+
+app.get("/payment/cancel", (req: Request, res: Response) => {
+  const bookingId = typeof req.query.bookingId === "string" ? req.query.bookingId : "";
+  res.status(200).send(`<!doctype html><html><body style="font-family:sans-serif;padding:2rem">
+    <h1>Payment cancelled</h1>
+    <p>Booking ID: ${bookingId || "n/a"}</p>
+    <p>You can close this tab and try again.</p>
+  </body></html>`);
+});
+
+app.get("/payment/fail", (_req: Request, res: Response) => {
+  res.status(200).send(`<!doctype html><html><body style="font-family:sans-serif;padding:2rem">
+    <h1>Payment failed</h1>
+    <p>You can close this tab and try again.</p>
+  </body></html>`);
 });
 
 // ─── Error Handling ──────────────────────────────────────────────────────────

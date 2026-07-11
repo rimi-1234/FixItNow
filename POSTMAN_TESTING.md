@@ -249,8 +249,11 @@ Booking must be `ACCEPTED` first.
 }
 ```
 
-Response includes `clientSecret` for Stripe.js / frontend confirmation.  
-With `stripe listen` running, successful payment updates booking to `PAID`.
+Response includes `gatewayUrl` — open it in a browser (or redirect frontend there).  
+Pay with test card `4242 4242 4242 4242`.  
+
+After success, Stripe redirects to `/payment/success?session_id=...` and the API **automatically** verifies the session and sets payment `COMPLETED` + booking `PAID` (no manual sync needed).  
+Optional: keep `npm run stripe:webhook` running so webhooks also update the DB in the background.
 
 ### Create SSLCommerz Payment
 `POST {{baseUrl}}/payments/create`

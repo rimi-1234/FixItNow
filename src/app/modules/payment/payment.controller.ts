@@ -12,10 +12,7 @@ const createPayment = catchAsync(async (req: Request, res: Response) => {
   sendResponse(res, {
     statusCode: 201,
     success: true,
-    message:
-      result.provider === 'SSLCOMMERZ'
-        ? 'SSLCommerz session created. Redirect the user to gatewayUrl to complete payment.'
-        : 'Payment intent created successfully. Use clientSecret to confirm payment.',
+    message: 'Payment session created. Redirect the user to gatewayUrl to complete payment.',
     data: result,
   });
 });

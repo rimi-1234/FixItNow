@@ -400,7 +400,7 @@ Authorization: Bearer <token>
       post: {
         tags: ['Payments'],
         summary: 'Create a Stripe or SSLCommerz payment session for an ACCEPTED booking',
-        description: 'Set `provider` to `STRIPE` (default) or `SSLCOMMERZ`. For Stripe, returns a `clientSecret` for Stripe.js. For SSLCommerz, returns a `gatewayUrl` to redirect the customer to. The booking must be in ACCEPTED status.',
+        description: 'Set `provider` to `STRIPE` (default) or `SSLCOMMERZ`. Both return a `gatewayUrl` — redirect the customer there to pay. The booking must be in ACCEPTED status.',
         security: [{ BearerAuth: [] }],
         requestBody: {
           required: true,
@@ -413,19 +413,28 @@ Authorization: Bearer <token>
               'application/json': {
                 examples: {
                   stripe: {
-                    summary: 'Stripe response',
+                    summary: 'Stripe Checkout response',
                     value: {
                       success: true,
-                      message: 'Payment intent created successfully. Use clientSecret to confirm payment.',
-                      data: { provider: 'STRIPE', clientSecret: 'pi_xxx_secret_xxx', payment: { id: 'uuid', status: 'PENDING' } },
+                      message: 'Payment session created. Redirect the user to gatewayUrl to complete payment.',
+                      data: {
+                        provider: 'STRIPE',
+                        gatewayUrl: 'https://checkout.stripe.com/c/pay/cs_test_...',
+                        sessionId: 'cs_test_...',
+                        payment: { id: 'uuid', status: 'PENDING' },
+                      },
                     },
                   },
                   sslcommerz: {
                     summary: 'SSLCommerz response',
                     value: {
                       success: true,
-                      message: 'SSLCommerz session created. Redirect the user to gatewayUrl to complete payment.',
-                      data: { provider: 'SSLCOMMERZ', gatewayUrl: 'https://sandbox.sslcommerz.com/gwprocess/v4/gw.php?Q=pay&...', payment: { id: 'uuid', status: 'PENDING' } },
+                      message: 'Payment session created. Redirect the user to gatewayUrl to complete payment.',
+                      data: {
+                        provider: 'SSLCOMMERZ',
+                        gatewayUrl: 'https://sandbox.sslcommerz.com/gwprocess/v4/gw.php?Q=pay&...',
+                        payment: { id: 'uuid', status: 'PENDING' },
+                      },
                     },
                   },
                 },

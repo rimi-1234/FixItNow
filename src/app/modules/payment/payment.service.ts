@@ -14,17 +14,48 @@ const getSslCommerzClient = () =>
     config.sslcommerz_is_live
   );
 
-const createStripePaymentIntent = async (bookingId: string, amount: number) => {
-  const paymentIntent = await stripe.paymentIntents.create({
-    amount: Math.round(amount * 100),
-    currency: 'usd',
+const createStripeCheckoutSession = async (
+  bookingId: string,
+  amount: number,
+  serviceName: string,
+  customerEmail: string
+) => {
+  const frontendUrl = config.frontend_url || 'http://localhost:5000';
+
+  const session = await stripe.checkout.sessions.create({
+    mode: 'payment',
+    payment_method_types: ['card'],
+    customer_email: customerEmail,
+    line_items: [
+      {
+        quantity: 1,
+        price_data: {
+          currency: 'usd',
+          unit_amount: Math.round(amount * 100),
+          product_data: {
+            name: serviceName || 'FixItNow Service Booking',
+            description: `Booking ID: ${bookingId}`,
+          },
+        },
+      },
+    ],
+    success_url: `${frontendUrl}/payment/success?bookingId=${bookingId}&session_id={CHECKOUT_SESSION_ID}`,
+    cancel_url: `${frontendUrl}/payment/cancel?bookingId=${bookingId}`,
     metadata: { bookingId },
+    client_reference_id: bookingId,
+    payment_intent_data: {
+      metadata: { bookingId },
+    },
   });
+
+  if (!session.url) {
+    throw Object.assign(new Error('Failed to create Stripe Checkout URL'), { statusCode: 502 });
+  }
 
   const payment = await prisma.payment.create({
     data: {
       bookingId,
-      transactionId: paymentIntent.id,
+      transactionId: session.id,
       amount,
       method: 'card',
       provider: 'STRIPE',
@@ -34,7 +65,8 @@ const createStripePaymentIntent = async (bookingId: string, amount: number) => {
 
   return {
     provider: 'STRIPE' as const,
-    clientSecret: paymentIntent.client_secret,
+    gatewayUrl: session.url,
+    sessionId: session.id,
     payment,
   };
 };
@@ -116,7 +148,65 @@ const createPaymentIntent = async (
     return createSslCommerzSession(booking.id, booking.service.price, booking.customer.email);
   }
 
-  return createStripePaymentIntent(booking.id, booking.service.price);
+  return createStripeCheckoutSession(
+    booking.id,
+    booking.service.price,
+    booking.service.name,
+    booking.customer.email
+  );
+};
+
+const markBookingPaid = async (bookingId: string, transactionId?: string) => {
+  let payment =
+    bookingId
+      ? await prisma.payment.findUnique({ where: { bookingId } })
+      : null;
+
+  if (!payment && transactionId) {
+    payment = await prisma.payment.findFirst({ where: { transactionId } });
+  }
+
+  if (!payment) return null;
+  if (payment.status === 'COMPLETED') return payment;
+
+  const updated = await prisma.payment.update({
+    where: { id: payment.id },
+    data: {
+      status: 'COMPLETED',
+      paidAt: new Date(),
+      ...(transactionId ? { transactionId } : {}),
+    },
+  });
+
+  await prisma.booking.update({
+    where: { id: payment.bookingId },
+    data: { status: 'PAID' },
+  });
+
+  return updated;
+};
+
+/** Verify a Checkout Session with Stripe and mark the booking PAID if paid. */
+const syncCheckoutSessionPaid = async (sessionId: string) => {
+  const session = await stripe.checkout.sessions.retrieve(sessionId);
+
+  if (session.payment_status !== 'paid') {
+    return {
+      synced: false,
+      paymentStatus: session.payment_status,
+      bookingId: session.metadata?.bookingId || session.client_reference_id || null,
+    };
+  }
+
+  const bookingId = session.metadata?.bookingId || session.client_reference_id || '';
+  const payment = await markBookingPaid(bookingId, session.id);
+
+  return {
+    synced: true,
+    paymentStatus: session.payment_status,
+    bookingId: payment?.bookingId || bookingId || null,
+    payment,
+  };
 };
 
 const confirmPayment = async (rawBody: Buffer | string, sig: string) => {
@@ -129,35 +219,35 @@ const confirmPayment = async (rawBody: Buffer | string, sig: string) => {
       config.stripe_webhook_secret
     );
   } catch (err: any) {
-    throw new Error(`Webhook signature verification failed: ${err.message}`);
+    throw Object.assign(new Error(`Webhook signature verification failed: ${err.message}`), {
+      statusCode: 400,
+    });
   }
 
+  // Stripe Checkout (redirect URL flow)
+  if (event.type === 'checkout.session.completed') {
+    const session = event.data.object as Stripe.Checkout.Session;
+    const bookingId = session.metadata?.bookingId || session.client_reference_id || '';
+    await markBookingPaid(bookingId, session.id);
+  }
+
+  // Fallback for PaymentIntent-based flows (also fired by Checkout)
   if (event.type === 'payment_intent.succeeded') {
     const paymentIntent = event.data.object as Stripe.PaymentIntent;
-    const bookingId = paymentIntent.metadata.bookingId;
-
-    await prisma.payment.update({
-      where: { bookingId },
-      data: {
-        status: 'COMPLETED',
-        paidAt: new Date(),
-      },
-    });
-
-    await prisma.booking.update({
-      where: { id: bookingId },
-      data: { status: 'PAID' },
-    });
+    const bookingId = paymentIntent.metadata?.bookingId;
+    if (bookingId) await markBookingPaid(bookingId);
   }
 
   if (event.type === 'payment_intent.payment_failed') {
     const paymentIntent = event.data.object as Stripe.PaymentIntent;
-    const bookingId = paymentIntent.metadata.bookingId;
+    const bookingId = paymentIntent.metadata?.bookingId;
 
-    await prisma.payment.update({
-      where: { bookingId },
-      data: { status: 'FAILED' },
-    });
+    if (bookingId) {
+      await prisma.payment.update({
+        where: { bookingId },
+        data: { status: 'FAILED' },
+      });
+    }
   }
 
   return { received: true };
@@ -240,6 +330,7 @@ const getPaymentDetails = async (paymentId: string, customerId: string) => {
 export const PaymentServices = {
   createPaymentIntent,
   confirmPayment,
+  syncCheckoutSessionPaid,
   validateSslCommerzTransaction,
   markSslCommerzTransactionFailed,
   getUserPayments,

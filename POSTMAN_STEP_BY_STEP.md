@@ -158,17 +158,18 @@ Use customer token again for payment.
 ```
 
 **What you get:**
-- `data.clientSecret`
+- `data.gatewayUrl` — open this URL in the browser (or redirect frontend there)
+- `data.sessionId`
 - payment status `PENDING`
 
 **Note:**  
-To finish payment in real flow, frontend uses `clientSecret` with Stripe test card:
+Open `gatewayUrl`, pay with Stripe test card:
 ```
 4242 4242 4242 4242
 ```
 Any future expiry, any CVC, any ZIP.
 
-After successful payment + webhook, booking status becomes `PAID`.
+After successful payment + webhook (`stripe listen`), booking status becomes `PAID`.
 
 ---
 
