@@ -134,6 +134,7 @@ const updateBookingStatus = async (
     throw Object.assign(new Error('Access denied: Not your booking'), { statusCode: 403 });
 
   // Validate allowed transitions
+  // Flow: REQUESTED → ACCEPTED → PAID → IN_PROGRESS → COMPLETED
   const allowed: Partial<Record<BookingStatus, BookingStatus[]>> = {
     REQUESTED: ['ACCEPTED', 'DECLINED'],
     PAID: ['IN_PROGRESS'],
@@ -141,10 +142,20 @@ const updateBookingStatus = async (
   };
 
   if (!allowed[booking.status]?.includes(status)) {
-    throw Object.assign(
-      new Error(`Cannot transition booking from ${booking.status} to ${status}`),
-      { statusCode: 400 }
-    );
+    let message = `Cannot transition booking from ${booking.status} to ${status}`;
+
+    if (booking.status === 'ACCEPTED' && status === 'IN_PROGRESS') {
+      message =
+        'Booking must be PAID before it can be marked IN_PROGRESS. Ask the customer to complete payment first.';
+    } else if (booking.status === 'REQUESTED' && status === 'IN_PROGRESS') {
+      message =
+        'Booking must be ACCEPTED and then PAID before it can be marked IN_PROGRESS.';
+    } else if (status === 'COMPLETED' && booking.status !== 'IN_PROGRESS') {
+      message =
+        'Booking must be IN_PROGRESS before it can be marked COMPLETED.';
+    }
+
+    throw Object.assign(new Error(message), { statusCode: 400 });
   }
 
   return prisma.booking.update({
