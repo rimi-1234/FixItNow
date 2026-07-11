@@ -28,7 +28,6 @@ router.get(
   AdminControllers.getAllBookings
 );
 
-// Service category management (delegates to the Category module)
 router.get('/categories', auth(Role.ADMIN), CategoryControllers.getAllCategories);
 router.post(
   '/categories',
@@ -42,6 +41,11 @@ router.patch(
   validateRequest(CategoryValidation.updateCategoryValidationSchema),
   CategoryControllers.updateCategory
 );
-router.delete('/categories/:id', auth(Role.ADMIN), CategoryControllers.deleteCategory);
+router.delete(
+  '/categories/:id',
+  auth(Role.ADMIN),
+  validateRequest(CategoryValidation.categoryIdParamValidationSchema),
+  CategoryControllers.deleteCategory
+);
 
 export const AdminRoutes = router;

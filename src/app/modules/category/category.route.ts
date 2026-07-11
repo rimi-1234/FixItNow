@@ -20,6 +20,11 @@ router.patch(
   validateRequest(CategoryValidation.updateCategoryValidationSchema),
   CategoryControllers.updateCategory
 );
-router.delete('/:id', auth(Role.ADMIN), CategoryControllers.deleteCategory);
+router.delete(
+  '/:id',
+  auth(Role.ADMIN),
+  validateRequest(CategoryValidation.categoryIdParamValidationSchema),
+  CategoryControllers.deleteCategory
+);
 
 export const CategoryRoutes = router;

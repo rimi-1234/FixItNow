@@ -12,6 +12,13 @@ const createPaymentValidationSchema = z.object({
   }),
 });
 
+const paymentIdParamValidationSchema = z.object({
+  params: z.object({
+    id: z.string().uuid({ message: 'Invalid payment id' }),
+  }),
+});
+
 export const PaymentValidation = {
   createPaymentValidationSchema,
+  paymentIdParamValidationSchema,
 };

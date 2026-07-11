@@ -7,6 +7,7 @@ import { ServiceValidation } from './service.validation.js';
 
 const router = express.Router();
 
+// Public browse — customers/technicians/guests can list services
 router.get(
   '/',
   validateRequest(ServiceValidation.getAllServicesValidationSchema),
@@ -27,6 +28,11 @@ router.patch(
   ServiceControllers.updateService
 );
 
-router.delete('/:id', auth(Role.TECHNICIAN), ServiceControllers.deleteService);
+router.delete(
+  '/:id',
+  auth(Role.TECHNICIAN),
+  validateRequest(ServiceValidation.serviceIdParamValidationSchema),
+  ServiceControllers.deleteService
+);
 
 export const ServiceRoutes = router;

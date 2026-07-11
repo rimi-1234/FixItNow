@@ -7,8 +7,6 @@ import { TechnicianValidation } from './technician.validation.js';
 
 const router = express.Router();
 
-// NOTE: Static routes must be registered before the dynamic `/:id` route,
-// otherwise Express would match e.g. "/bookings" or "/profile" as an `:id` param.
 router.put(
   '/profile',
   auth(Role.TECHNICIAN),
@@ -21,14 +19,24 @@ router.put(
   validateRequest(TechnicianValidation.updateAvailabilityValidationSchema),
   TechnicianControllers.updateAvailability
 );
+
 router.get('/bookings', auth(Role.TECHNICIAN), TechnicianControllers.getTechnicianBookings);
-router.patch('/bookings/:id', auth(Role.TECHNICIAN), TechnicianControllers.updateBookingStatus);
+router.patch(
+  '/bookings/:id',
+  auth(Role.TECHNICIAN),
+  validateRequest(TechnicianValidation.updateBookingStatusValidationSchema),
+  TechnicianControllers.updateBookingStatus
+);
 
 router.get(
   '/',
   validateRequest(TechnicianValidation.getAllTechniciansValidationSchema),
   TechnicianControllers.getAllTechnicians
 );
-router.get('/:id', TechnicianControllers.getTechnicianById);
+router.get(
+  '/:id',
+  validateRequest(TechnicianValidation.technicianIdParamValidationSchema),
+  TechnicianControllers.getTechnicianById
+);
 
 export const TechnicianRoutes = router;

@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { BookingStatus } from '@prisma/client';
 
 const updateTechnicianProfileValidationSchema = z.object({
   body: z.object({
@@ -28,8 +29,35 @@ const getAllTechniciansValidationSchema = z.object({
   }),
 });
 
+const updateBookingStatusValidationSchema = z.object({
+  params: z.object({
+    id: z.string().uuid({ message: 'Invalid booking id' }),
+  }),
+  body: z.object({
+    status: z.enum(
+      [
+        BookingStatus.ACCEPTED,
+        BookingStatus.DECLINED,
+        BookingStatus.IN_PROGRESS,
+        BookingStatus.COMPLETED,
+      ],
+      {
+        message: 'status must be ACCEPTED, DECLINED, IN_PROGRESS, or COMPLETED',
+      }
+    ),
+  }),
+});
+
+const technicianIdParamValidationSchema = z.object({
+  params: z.object({
+    id: z.string().uuid({ message: 'Invalid technician id' }),
+  }),
+});
+
 export const TechnicianValidation = {
   updateTechnicianProfileValidationSchema,
   updateAvailabilityValidationSchema,
   getAllTechniciansValidationSchema,
+  updateBookingStatusValidationSchema,
+  technicianIdParamValidationSchema,
 };

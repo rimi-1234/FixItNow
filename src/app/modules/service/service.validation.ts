@@ -10,6 +10,9 @@ const createServiceValidationSchema = z.object({
 });
 
 const updateServiceValidationSchema = z.object({
+  params: z.object({
+    id: z.string().uuid({ message: 'Invalid service id' }),
+  }),
   body: z.object({
     name: z.string().min(1).optional(),
     description: z.string().min(1).optional(),
@@ -29,8 +32,15 @@ const getAllServicesValidationSchema = z.object({
   }),
 });
 
+const serviceIdParamValidationSchema = z.object({
+  params: z.object({
+    id: z.string().uuid({ message: 'Invalid service id' }),
+  }),
+});
+
 export const ServiceValidation = {
   createServiceValidationSchema,
   updateServiceValidationSchema,
   getAllServicesValidationSchema,
+  serviceIdParamValidationSchema,
 };

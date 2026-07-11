@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { uuidParamSchema } from '../../shared/validation.js';
 
 const createBookingValidationSchema = z.object({
   body: z.object({
@@ -8,6 +9,9 @@ const createBookingValidationSchema = z.object({
   }),
 });
 
+const bookingIdParamValidationSchema = uuidParamSchema;
+
 export const BookingValidation = {
-  createBookingValidationSchema
+  createBookingValidationSchema,
+  bookingIdParamValidationSchema,
 };

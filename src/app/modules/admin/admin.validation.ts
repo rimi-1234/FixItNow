@@ -2,6 +2,9 @@ import { z } from 'zod';
 import { Role, UserStatus, BookingStatus } from '@prisma/client';
 
 const updateUserStatusValidationSchema = z.object({
+  params: z.object({
+    id: z.string().uuid({ message: 'Invalid user id' }),
+  }),
   body: z.object({
     status: z.enum([UserStatus.ACTIVE, UserStatus.BANNED], {
       message: `status must be one of: ${Object.values(UserStatus).join(', ')}`,
@@ -33,8 +36,15 @@ const getAllBookingsValidationSchema = z.object({
   }),
 });
 
+const categoryIdParamValidationSchema = z.object({
+  params: z.object({
+    id: z.string().uuid({ message: 'Invalid category id' }),
+  }),
+});
+
 export const AdminValidation = {
   updateUserStatusValidationSchema,
   getAllUsersValidationSchema,
   getAllBookingsValidationSchema,
+  categoryIdParamValidationSchema,
 };
