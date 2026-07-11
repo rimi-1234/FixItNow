@@ -2,7 +2,7 @@ import prisma from '../../../lib/prisma.js';
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
 import config from '../../../config/index.js';
-import { Role } from '@prisma/client';
+import { Prisma, Role } from '@prisma/client';
 import { ILoginPayload, IRegisterPayload } from './auth.interface';
 
 const registerUser = async (payload: IRegisterPayload) => {
@@ -11,19 +11,21 @@ const registerUser = async (payload: IRegisterPayload) => {
   if (!email || !password) throw new Error('Email and password are required');
   const hashedPassword = await bcrypt.hash(password, Number(config.bcrypt_salt_rounds) || 12);
 
+  const technicianProfileCreate = {
+    skills: profileData.skills || [],
+    experience: profileData.experience || 0,
+    hourlyRate: profileData.hourlyRate || 0,
+    bio: profileData.bio || null,
+    location: profileData.location || null,
+  } as Prisma.TechnicianProfileCreateWithoutUserInput;
+
   const user = await prisma.user.create({
     data: {
       email,
       password: hashedPassword,
       role: role || Role.CUSTOMER,
       technicianProfile: role === Role.TECHNICIAN ? {
-        create: {
-          skills: profileData.skills || [],
-          experience: profileData.experience || 0,
-          hourlyRate: profileData.hourlyRate || 0,
-          bio: profileData.bio || null,
-          location: profileData.location || null
-        }
+        create: technicianProfileCreate,
       } : undefined
     },
     select: {
