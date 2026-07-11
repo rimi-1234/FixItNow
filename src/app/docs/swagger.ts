@@ -26,7 +26,7 @@ Authorization: Bearer <token>
   },
   servers: [
     { url: 'http://localhost:5000/api', description: 'Local Development' },
-    { url: 'https://your-api.vercel.app/api', description: 'Production' },
+    { url: 'https://fix-it-now-two.vercel.app/api', description: 'Production' },
   ],
   components: {
     securitySchemes: {

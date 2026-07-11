@@ -9,8 +9,8 @@ Three roles: **CUSTOMER**, **TECHNICIAN**, **ADMIN**.
 | Item | Value |
 |------|--------|
 | Backend Repo | https://github.com/rimi-1234/FixItNow |
-| Live API | _(add your Render/Vercel URL)_ |
-| API Docs (Swagger) | `http://localhost:5000/api-docs` (local) / `https://YOUR-LIVE-URL/api-docs` |
+| Live API | https://fix-it-now-two.vercel.app |
+| API Docs (Swagger) | https://fix-it-now-two.vercel.app/api-docs |
 | Postman Collection | [`FixItNow.postman_collection.json`](./FixItNow.postman_collection.json) |
 | Demo Video | _(add Loom / Drive link)_ |
 | Admin Email | `admin@fixitnow.com` |
