@@ -94,7 +94,7 @@ const cancelBooking = async (bookingId: string, customerId: string) => {
 
   return prisma.booking.update({
     where: { id: bookingId },
-    data: { status: 'CANCELLED' },
+    data: { status: 'CANCELLED' as BookingStatus },
     include: {
       technician: { select: { id: true, email: true } },
       service: true,
