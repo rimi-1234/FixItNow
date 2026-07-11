@@ -91,7 +91,7 @@ app.get("/payment/fail", (_req: Request, res: Response) => {
 });
 
 // ─── Error Handling ──────────────────────────────────────────────────────────
-app.use(globalErrorHandler);
 app.use(notFound);
+app.use(globalErrorHandler);
 
 export default app;

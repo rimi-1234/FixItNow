@@ -11,10 +11,11 @@
     "build": "tsc",
     "start": "node dist/server.js",
     "stripe:webhook": "node scripts/stripe-listen.mjs",
+    "db:seed": "tsx prisma/models/seed.ts",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "prisma": {
-    "seed": "ts-node prisma/models/seed.ts"
+    "seed": "tsx prisma/models/seed.ts"
   },
   "devDependencies": {
     "@types/bcryptjs": "^2.4.6",

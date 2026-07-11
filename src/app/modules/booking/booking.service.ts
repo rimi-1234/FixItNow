@@ -7,17 +7,19 @@ const createBooking = async (customerId: string, payload: IBookingCreatePayload)
   const technician = await prisma.user.findUnique({
     where: { id: payload.technicianId, role: 'TECHNICIAN' }
   });
-  if (!technician) throw new Error('Technician not found');
+  if (!technician) throw Object.assign(new Error('Technician not found'), { statusCode: 404 });
 
   // Check if service exists
   const service = await prisma.service.findUnique({
     where: { id: payload.serviceId }
   });
-  if (!service) throw new Error('Service not found');
+  if (!service) throw Object.assign(new Error('Service not found'), { statusCode: 404 });
 
   // Ensure service belongs to this technician
   if (service.technicianId !== payload.technicianId) {
-    throw new Error('This service is not offered by the selected technician');
+    throw Object.assign(new Error('This service is not offered by the selected technician'), {
+      statusCode: 400,
+    });
   }
 
   const booking = await prisma.booking.create({
@@ -62,11 +64,13 @@ const getBookingDetails = async (bookingId: string, customerId: string) => {
     }
   });
 
-  if (!booking) throw new Error('Booking not found');
+  if (!booking) throw Object.assign(new Error('Booking not found'), { statusCode: 404 });
   
   // Ensure the booking belongs to the customer
   if (booking.customerId !== customerId) {
-    throw new Error('You do not have permission to view this booking');
+    throw Object.assign(new Error('You do not have permission to view this booking'), {
+      statusCode: 403,
+    });
   }
 
   return booking;

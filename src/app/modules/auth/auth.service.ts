@@ -5,10 +5,13 @@ import config from '../../../config/index.js';
 import { Prisma, Role } from '@prisma/client';
 import { ILoginPayload, IRegisterPayload } from './auth.interface';
 
+const httpError = (message: string, statusCode: number) =>
+  Object.assign(new Error(message), { statusCode });
+
 const registerUser = async (payload: IRegisterPayload) => {
-  if (!payload) throw new Error('Request payload is required');
+  if (!payload) throw httpError('Request payload is required', 400);
   const { email, password, role, ...profileData } = payload;
-  if (!email || !password) throw new Error('Email and password are required');
+  if (!email || !password) throw httpError('Email and password are required', 400);
   const hashedPassword = await bcrypt.hash(password, Number(config.bcrypt_salt_rounds) || 12);
 
   const technicianProfileCreate = {
@@ -24,9 +27,12 @@ const registerUser = async (payload: IRegisterPayload) => {
       email,
       password: hashedPassword,
       role: role || Role.CUSTOMER,
-      technicianProfile: role === Role.TECHNICIAN ? {
-        create: technicianProfileCreate,
-      } : undefined
+      technicianProfile:
+        role === Role.TECHNICIAN
+          ? {
+              create: technicianProfileCreate,
+            }
+          : undefined,
     },
     select: {
       id: true,
@@ -36,24 +42,23 @@ const registerUser = async (payload: IRegisterPayload) => {
       createdAt: true,
       updatedAt: true,
       technicianProfile: true,
-    }
+    },
   });
 
   return user;
 };
 
 const loginUser = async (payload: ILoginPayload) => {
-  if (!payload) throw new Error('Request payload is required');
+  if (!payload) throw httpError('Request payload is required', 400);
   const { email, password } = payload;
-  if (!email || !password) throw new Error('Email and password are required');
-
+  if (!email || !password) throw httpError('Email and password are required', 400);
 
   const user = await prisma.user.findUnique({ where: { email } });
-  if (!user) throw new Error('User not found');
-  if (user.status === 'BANNED') throw new Error('User is banned');
+  if (!user) throw httpError('User not found', 404);
+  if (user.status === 'BANNED') throw httpError('User is banned', 403);
 
   const isPasswordMatch = await bcrypt.compare(password, user.password);
-  if (!isPasswordMatch) throw new Error('Incorrect password');
+  if (!isPasswordMatch) throw httpError('Incorrect password', 401);
 
   const accessToken = jwt.sign(
     { id: user.id, email: user.email, role: user.role },
@@ -67,8 +72,8 @@ const loginUser = async (payload: ILoginPayload) => {
       id: user.id,
       email: user.email,
       role: user.role,
-      status: user.status
-    }
+      status: user.status,
+    },
   };
 };
 
@@ -83,7 +88,7 @@ const getMeFromDB = async (email: string) => {
       createdAt: true,
       updatedAt: true,
       technicianProfile: true,
-    }
+    },
   });
   return result;
 };
