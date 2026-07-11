@@ -1,22 +1,22 @@
 {
-    "compilerOptions": {
-      "outDir": "./dist",
-      "module": "ESNext",
-      "moduleResolution": "bundler",
-      "target": "ES2023",
-      "types": ["node"],
-      "sourceMap": true,
-      "declaration": true,
-      "declarationMap": true,
-      "noUncheckedIndexedAccess": true,
-      "strict": true,
-      "isolatedModules": true,
-      "noUncheckedSideEffectImports": true,
-      "allowSyntheticDefaultImports": true,  // <-- এই লাইনটি যোগ করুন
-       "esModuleInterop": true,
-      "moduleDetection": "force",
-      "skipLibCheck": true
-    },
-    // "include": ["src/**/*"],
-    "exclude": ["node_modules", "dist"]
-  }
+  "compilerOptions": {
+    "rootDir": "./src",
+    "outDir": "./dist",
+    "module": "NodeNext",
+    "moduleResolution": "NodeNext",
+    "target": "ES2022",
+    "types": ["node"],
+    "sourceMap": true,
+    "declaration": true,
+    "declarationMap": true,
+    "noUncheckedIndexedAccess": true,
+    "strict": true,
+    "isolatedModules": true,
+    "esModuleInterop": true,
+    "allowSyntheticDefaultImports": true,
+    "moduleDetection": "force",
+    "skipLibCheck": true
+  },
+  "include": ["src/**/*"],
+  "exclude": ["node_modules", "dist", "api"]
+}

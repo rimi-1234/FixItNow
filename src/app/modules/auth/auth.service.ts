@@ -3,7 +3,7 @@ import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
 import config from '../../../config/index.js';
 import { Prisma, Role } from '@prisma/client';
-import { ILoginPayload, IRegisterPayload } from './auth.interface';
+import { ILoginPayload, IRegisterPayload } from './auth.interface.js';
 
 const httpError = (message: string, statusCode: number) =>
   Object.assign(new Error(message), { statusCode });
