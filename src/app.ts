@@ -34,6 +34,23 @@ app.use(
 app.use("/api", router);
 
 // ─── Health Check ─────────────────────────────────────────────────────────────
+app.get("/", (_req: Request, res: Response) => {
+  res.status(200).json({
+    success: true,
+    message: "FixItNow API",
+    data: {
+      health: "/health",
+      docs: "/api-docs",
+      apiBase: "/api",
+      examples: {
+        services: "/api/services",
+        categories: "/api/categories",
+        authLogin: "POST /api/auth/login",
+      },
+    },
+  });
+});
+
 app.get("/health", (_req: Request, res: Response) => {
   res.status(200).json({
     success: true,
