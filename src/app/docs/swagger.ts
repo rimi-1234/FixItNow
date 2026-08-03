@@ -147,6 +147,12 @@ Authorization: Bearer <token>
           description: { type: 'string', example: 'Professional interior wall painting' },
           price: { type: 'number', example: 150.0 },
           categoryId: { type: 'string', format: 'uuid' },
+          imageUrl: {
+            type: 'string',
+            format: 'uri',
+            nullable: true,
+            example: 'https://images.unsplash.com/photo-1562259949-e8e7689d7828',
+          },
         },
       },
       ServiceUpdate: {
@@ -156,6 +162,7 @@ Authorization: Bearer <token>
           description: { type: 'string' },
           price: { type: 'number' },
           categoryId: { type: 'string', format: 'uuid' },
+          imageUrl: { type: 'string', format: 'uri', nullable: true },
         },
       },
       AvailabilityUpdate: {

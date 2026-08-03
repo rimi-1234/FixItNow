@@ -1,11 +1,33 @@
 import { z } from 'zod';
 
+const imageUrlSchema = z
+  .string()
+  .optional()
+  .nullable()
+  .transform((value) => {
+    const trimmed = typeof value === 'string' ? value.trim() : value;
+    return trimmed ? trimmed : null;
+  })
+  .refine(
+    (value) =>
+      value === null ||
+      value.startsWith('/') ||
+      value.startsWith('data:image/') ||
+      /^https?:\/\//i.test(value),
+    { message: 'Image must be a URL, site path, or uploaded image' }
+  )
+  .refine(
+    (value) => value === null || value.length <= 1_500_000,
+    { message: 'Image data is too large' }
+  );
+
 const createServiceValidationSchema = z.object({
   body: z.object({
     name: z.string().min(1, { message: 'Name is required' }),
     description: z.string().min(1, { message: 'Description is required' }),
     price: z.number().nonnegative({ message: 'Price must be a positive number' }),
     categoryId: z.string().uuid({ message: 'Valid Category ID is required' }),
+    imageUrl: imageUrlSchema,
   }),
 });
 
@@ -18,6 +40,7 @@ const updateServiceValidationSchema = z.object({
     description: z.string().min(1).optional(),
     price: z.number().nonnegative().optional(),
     categoryId: z.string().uuid().optional(),
+    imageUrl: imageUrlSchema,
   }),
 });
 

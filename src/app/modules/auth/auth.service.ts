@@ -20,6 +20,7 @@ const registerUser = async (payload: IRegisterPayload) => {
     hourlyRate: profileData.hourlyRate || 0,
     bio: profileData.bio || null,
     location: profileData.location || null,
+    imageUrl: profileData.imageUrl || null,
   } as Prisma.TechnicianProfileCreateWithoutUserInput;
 
   const user = await prisma.user.create({

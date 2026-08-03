@@ -4,6 +4,7 @@ export interface ITechnicianUpdateProfilePayload {
   hourlyRate?: number;
   bio?: string;
   location?: string;
+  imageUrl?: string | null;
 }
 
 export interface ITechnicianFilters {

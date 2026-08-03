@@ -14,4 +14,5 @@ export interface IRegisterPayload {
   hourlyRate?: number;
   bio?: string;
   location?: string;
+  imageUrl?: string | null;
 }

@@ -37,8 +37,9 @@ const sslcommerzSuccess = catchAsync(async (req: Request, res: Response) => {
 
   const payment = await PaymentServices.validateSslCommerzTransaction(tran_id, val_id);
 
-  if (config.app_url) {
-    return res.redirect(`${config.app_url}/payment/success?bookingId=${payment.bookingId}`);
+  if (config.frontend_url || config.app_url) {
+    const base = (config.frontend_url || config.app_url || "").replace(/\/$/, "");
+    return res.redirect(`${base}/payment/success?bookingId=${payment.bookingId}`);
   }
   sendResponse(res, {
     statusCode: 200,
@@ -53,8 +54,9 @@ const sslcommerzFail = catchAsync(async (req: Request, res: Response) => {
   const { tran_id } = req.body as { tran_id?: string };
   if (tran_id) await PaymentServices.markSslCommerzTransactionFailed(tran_id);
 
-  if (config.app_url) {
-    return res.redirect(`${config.app_url}/payment/fail`);
+  if (config.frontend_url || config.app_url) {
+    const base = (config.frontend_url || config.app_url || "").replace(/\/$/, "");
+    return res.redirect(`${base}/payment/fail`);
   }
   sendResponse(res, { statusCode: 200, success: false, message: 'Payment failed', data: null });
 });
@@ -64,8 +66,9 @@ const sslcommerzCancel = catchAsync(async (req: Request, res: Response) => {
   const { tran_id } = req.body as { tran_id?: string };
   if (tran_id) await PaymentServices.markSslCommerzTransactionFailed(tran_id);
 
-  if (config.app_url) {
-    return res.redirect(`${config.app_url}/payment/cancel`);
+  if (config.frontend_url || config.app_url) {
+    const base = (config.frontend_url || config.app_url || "").replace(/\/$/, "");
+    return res.redirect(`${base}/payment/cancel`);
   }
   sendResponse(res, { statusCode: 200, success: false, message: 'Payment cancelled', data: null });
 });

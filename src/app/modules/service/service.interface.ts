@@ -3,6 +3,7 @@ export interface IServicePayload {
   description: string;
   price: number;
   categoryId: string;
+  imageUrl?: string | null;
 }
 
 export interface IServiceUpdatePayload {
@@ -10,6 +11,7 @@ export interface IServiceUpdatePayload {
   description?: string;
   price?: number;
   categoryId?: string;
+  imageUrl?: string | null;
 }
 
 export interface IServiceFilters {

@@ -18,10 +18,29 @@ const registerValidationSchema = z.object({
     hourlyRate: z.number().nonnegative().optional(),
     bio: z.string().optional(),
     location: z.string().optional(),
+    imageUrl: z
+      .string()
+      .optional()
+      .nullable()
+      .transform((value) => {
+        const trimmed = typeof value === "string" ? value.trim() : value;
+        return trimmed ? trimmed : null;
+      })
+      .refine(
+        (value) =>
+          value === null ||
+          value.startsWith("/") ||
+          value.startsWith("data:image/") ||
+          /^https?:\/\//i.test(value),
+        { message: "Image must be a URL, site path, or uploaded image" }
+      )
+      .refine(
+        (value) => value === null || value.length <= 1_500_000,
+        { message: "Image data is too large" }
+      ),
   })
     .refine(
       (data) => {
-        // If role is TECHNICIAN, we might want to enforce skills/experience/hourlyRate
         if (data.role === Role.TECHNICIAN) {
           return data.skills !== undefined && data.experience !== undefined && data.hourlyRate !== undefined;
         }

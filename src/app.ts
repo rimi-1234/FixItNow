@@ -6,6 +6,8 @@ import { globalErrorHandler } from "./middlewares/globalErrorHandler.js";
 import { notFound } from "./middlewares/notFound.js";
 import { swaggerSpec } from "./app/docs/swagger.js";
 import { PaymentServices } from "./app/modules/payment/payment.service.js";
+import config from "./config/index.js";
+import { paymentResultHtml } from "./utils/payment-result-html.js";
 
 const app: Application = express();
 
@@ -17,8 +19,8 @@ app.use(cors());
 // it reaches the payment route.
 app.use("/api/payments/confirm", express.raw({ type: "application/json" }));
 
-app.use(express.json());
-app.use(express.urlencoded({ extended: true }));
+app.use(express.json({ limit: '2mb' }));
+app.use(express.urlencoded({ extended: true, limit: '2mb' }));
 
 // ─── Swagger API Docs ────────────────────────────────────────────────────────
 app.use(
@@ -63,7 +65,21 @@ app.get("/health", (_req: Request, res: Response) => {
   });
 });
 
-// Stripe / SSLCommerz browser redirects (no frontend required for local testing)
+function frontendBase() {
+  return (config.frontend_url || config.app_url || "").replace(/\/$/, "");
+}
+
+function shouldRedirectToFrontend(req: Request) {
+  const front = frontendBase();
+  const appUrl = (config.app_url || "").replace(/\/$/, "");
+  if (!front) return false;
+  if (appUrl && front !== appUrl) return true;
+  const host = req.get("host") ?? "";
+  if (front.includes("localhost:3000") && !host.includes("3000")) return true;
+  return false;
+}
+
+// Stripe / SSLCommerz browser redirects — prefer the web app when configured.
 app.get("/payment/success", async (req: Request, res: Response) => {
   const bookingIdQuery = typeof req.query.bookingId === "string" ? req.query.bookingId : "";
   const sessionId = typeof req.query.session_id === "string" ? req.query.session_id : "";
@@ -71,8 +87,6 @@ app.get("/payment/success", async (req: Request, res: Response) => {
   let synced = false;
   let bookingId = bookingIdQuery;
 
-  // Auto-mark PAID by verifying the Checkout Session with Stripe
-  // (works even if the webhook was missed locally).
   if (sessionId) {
     try {
       const result = await PaymentServices.syncCheckoutSessionPaid(sessionId);
@@ -83,28 +97,83 @@ app.get("/payment/success", async (req: Request, res: Response) => {
     }
   }
 
-  res.status(200).send(`<!doctype html><html><body style="font-family:sans-serif;padding:2rem">
-    <h1>${synced ? "Payment successful" : "Payment received"}</h1>
-    <p>Booking ID: ${bookingId || "n/a"}</p>
-    <p>Database status: ${synced ? "PAID / COMPLETED" : "pending webhook sync"}</p>
-    <p>You can close this tab.</p>
-  </body></html>`);
+  const front = frontendBase();
+  if (shouldRedirectToFrontend(req) && front) {
+    const params = new URLSearchParams();
+    if (bookingId) params.set("bookingId", bookingId);
+    if (sessionId) params.set("session_id", sessionId);
+    return res.redirect(302, `${front}/payment/success?${params.toString()}`);
+  }
+
+  const dash = bookingId
+    ? `${front}/dashboard/customer/bookings/${bookingId}`
+    : `${front}/dashboard/customer`;
+
+  res.status(200).send(
+    paymentResultHtml({
+      variant: "success",
+      title: synced ? "Payment successful" : "Payment received",
+      subtitle: synced
+        ? "Your booking is marked paid. You can return to FixItNow or close this tab."
+        : "We're finishing confirmation. Check your bookings in a moment.",
+      bookingId: bookingId || undefined,
+      statusLine: synced ? "Status: PAID / COMPLETED" : "Status: pending sync",
+      primaryHref: dash || undefined,
+      primaryLabel: bookingId ? "View booking" : "Open dashboard",
+      secondaryHref: front || undefined,
+      secondaryLabel: front ? "Back to FixItNow" : undefined,
+    })
+  );
 });
 
 app.get("/payment/cancel", (req: Request, res: Response) => {
   const bookingId = typeof req.query.bookingId === "string" ? req.query.bookingId : "";
-  res.status(200).send(`<!doctype html><html><body style="font-family:sans-serif;padding:2rem">
-    <h1>Payment cancelled</h1>
-    <p>Booking ID: ${bookingId || "n/a"}</p>
-    <p>You can close this tab and try again.</p>
-  </body></html>`);
+  const front = frontendBase();
+
+  if (shouldRedirectToFrontend(req) && front) {
+    const params = new URLSearchParams();
+    if (bookingId) params.set("bookingId", bookingId);
+    const q = params.toString();
+    return res.redirect(302, `${front}/payment/cancel${q ? `?${q}` : ""}`);
+  }
+
+  const retry = bookingId
+    ? `${front}/dashboard/customer/bookings/${bookingId}/pay`
+    : `${front}/dashboard/customer`;
+
+  res.status(200).send(
+    paymentResultHtml({
+      variant: "cancel",
+      title: "Payment cancelled",
+      subtitle: "No charge was made. You can try again whenever you're ready.",
+      bookingId: bookingId || undefined,
+      primaryHref: retry || undefined,
+      primaryLabel: bookingId ? "Try again" : "Open dashboard",
+      secondaryHref: bookingId
+        ? `${front}/dashboard/customer/bookings/${bookingId}`
+        : front || undefined,
+      secondaryLabel: bookingId ? "View booking" : "Back to FixItNow",
+    })
+  );
 });
 
-app.get("/payment/fail", (_req: Request, res: Response) => {
-  res.status(200).send(`<!doctype html><html><body style="font-family:sans-serif;padding:2rem">
-    <h1>Payment failed</h1>
-    <p>You can close this tab and try again.</p>
-  </body></html>`);
+app.get("/payment/fail", (req: Request, res: Response) => {
+  const front = frontendBase();
+  if (shouldRedirectToFrontend(req) && front) {
+    return res.redirect(302, `${front}/payment/cancel`);
+  }
+
+  res.status(200).send(
+    paymentResultHtml({
+      variant: "fail",
+      title: "Payment failed",
+      subtitle: "Something went wrong with checkout. You can try again from your booking.",
+      primaryHref: front ? `${front}/dashboard/customer` : undefined,
+      primaryLabel: "Open dashboard",
+      secondaryHref: front || undefined,
+      secondaryLabel: front ? "Back to FixItNow" : undefined,
+    })
+  );
 });
 
 // ─── Error Handling ──────────────────────────────────────────────────────────

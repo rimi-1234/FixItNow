@@ -3,6 +3,7 @@ model Service {
   name         String
   description  String
   price        Float
+  imageUrl     String?
   categoryId   String
   technicianId String
   createdAt    DateTime @default(now())
