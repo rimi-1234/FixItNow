@@ -46,7 +46,15 @@ const registerUser = async (payload: IRegisterPayload) => {
     },
   });
 
-  return user;
+  // Issue a token immediately so the client can sign the user in and skip
+  // the extra "log in again" step right after registering.
+  const accessToken = jwt.sign(
+    { id: user.id, email: user.email, role: user.role },
+    config.jwt_access_secret as string,
+    { expiresIn: (config.jwt_access_expires_in || '1d') as any }
+  );
+
+  return { accessToken, user };
 };
 
 const loginUser = async (payload: ILoginPayload) => {
