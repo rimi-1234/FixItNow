@@ -88,18 +88,43 @@ const getTechnicianById = async (id: string) => {
           booking: { select: { id: true, service: true } },
         },
       },
+      // Active holds only — used by the public book-now slot picker
+      technicianBookings: {
+        where: {
+          status: {
+            in: ['REQUESTED', 'ACCEPTED', 'PAID', 'IN_PROGRESS'],
+          },
+          scheduledTime: { gte: new Date(Date.now() - 60 * 60 * 1000) },
+        },
+        select: {
+          id: true,
+          scheduledTime: true,
+          status: true,
+        },
+        orderBy: { scheduledTime: 'asc' },
+      },
     },
   });
 
   if (!technician) throw Object.assign(new Error('Technician not found'), { statusCode: 404 });
 
-  const { reviewsReceived, ...rest } = technician;
+  const { reviewsReceived, technicianBookings, ...rest } = technician;
   const reviewCount = reviewsReceived.length;
   const averageRating = reviewCount
     ? Number((reviewsReceived.reduce((sum, r) => sum + r.rating, 0) / reviewCount).toFixed(2))
     : 0;
 
-  return { ...rest, reviews: reviewsReceived, averageRating, reviewCount };
+  return {
+    ...rest,
+    reviews: reviewsReceived,
+    bookedSlots: technicianBookings.map((booking) => ({
+      id: booking.id,
+      scheduledTime: booking.scheduledTime,
+      status: booking.status,
+    })),
+    averageRating,
+    reviewCount,
+  };
 };
 
 const updateProfile = async (id: string, payload: ITechnicianUpdateProfilePayload) => {

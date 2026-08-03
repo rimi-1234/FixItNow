@@ -69,10 +69,27 @@ function frontendBase() {
   return (config.frontend_url || config.app_url || "").replace(/\/$/, "");
 }
 
+function requestOrigin(req: Request) {
+  const proto = (req.get("x-forwarded-proto") ?? req.protocol ?? "https").split(",")[0];
+  const host = req.get("host") ?? "";
+  return `${proto}://${host}`.replace(/\/$/, "");
+}
+
 function shouldRedirectToFrontend(req: Request) {
   const front = frontendBase();
-  const appUrl = (config.app_url || "").replace(/\/$/, "");
   if (!front) return false;
+
+  // Never redirect to ourselves — a misconfigured FRONTEND_URL pointing at this
+  // same API domain would otherwise cause an infinite redirect loop.
+  const origin = requestOrigin(req);
+  if (front === origin) return false;
+  try {
+    if (new URL(front).host === new URL(origin).host) return false;
+  } catch {
+    // ignore malformed URL, fall through to other checks
+  }
+
+  const appUrl = (config.app_url || "").replace(/\/$/, "");
   if (appUrl && front !== appUrl) return true;
   const host = req.get("host") ?? "";
   if (front.includes("localhost:3000") && !host.includes("3000")) return true;
