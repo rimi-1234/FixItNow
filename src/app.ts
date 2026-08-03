@@ -65,9 +65,11 @@ app.get("/health", (_req: Request, res: Response) => {
   });
 });
 
-function frontendBase() {
-  return (config.frontend_url || config.app_url || "").replace(/\/$/, "");
-}
+// Known deployed web app URL — used as a safety-net fallback whenever
+// FRONTEND_URL is misconfigured to point at this API's own domain. Without
+// this, dashboard/booking links would point back at the API (which has no
+// /dashboard routes) and 404, or worse, redirect to itself forever.
+const KNOWN_FRONTEND_FALLBACK = "https://fixit-frontend-umber.vercel.app";
 
 function requestOrigin(req: Request) {
   const proto = (req.get("x-forwarded-proto") ?? req.protocol ?? "https").split(",")[0];
@@ -75,19 +77,30 @@ function requestOrigin(req: Request) {
   return `${proto}://${host}`.replace(/\/$/, "");
 }
 
-function shouldRedirectToFrontend(req: Request) {
-  const front = frontendBase();
+function sameHost(a: string, b: string) {
+  if (!a || !b) return false;
+  if (a === b) return true;
+  try {
+    return new URL(a).host === new URL(b).host;
+  } catch {
+    return false;
+  }
+}
+
+function frontendBase(req: Request) {
+  const configured = (config.frontend_url || config.app_url || "").replace(/\/$/, "");
+  const origin = requestOrigin(req);
+  if (configured && sameHost(configured, origin)) return KNOWN_FRONTEND_FALLBACK;
+  return configured || KNOWN_FRONTEND_FALLBACK;
+}
+
+function shouldRedirectToFrontend(req: Request, front: string) {
   if (!front) return false;
 
   // Never redirect to ourselves — a misconfigured FRONTEND_URL pointing at this
   // same API domain would otherwise cause an infinite redirect loop.
   const origin = requestOrigin(req);
-  if (front === origin) return false;
-  try {
-    if (new URL(front).host === new URL(origin).host) return false;
-  } catch {
-    // ignore malformed URL, fall through to other checks
-  }
+  if (sameHost(front, origin)) return false;
 
   const appUrl = (config.app_url || "").replace(/\/$/, "");
   if (appUrl && front !== appUrl) return true;
@@ -114,8 +127,8 @@ app.get("/payment/success", async (req: Request, res: Response) => {
     }
   }
 
-  const front = frontendBase();
-  if (shouldRedirectToFrontend(req) && front) {
+  const front = frontendBase(req);
+  if (shouldRedirectToFrontend(req, front)) {
     const params = new URLSearchParams();
     if (bookingId) params.set("bookingId", bookingId);
     if (sessionId) params.set("session_id", sessionId);
@@ -145,9 +158,9 @@ app.get("/payment/success", async (req: Request, res: Response) => {
 
 app.get("/payment/cancel", (req: Request, res: Response) => {
   const bookingId = typeof req.query.bookingId === "string" ? req.query.bookingId : "";
-  const front = frontendBase();
+  const front = frontendBase(req);
 
-  if (shouldRedirectToFrontend(req) && front) {
+  if (shouldRedirectToFrontend(req, front)) {
     const params = new URLSearchParams();
     if (bookingId) params.set("bookingId", bookingId);
     const q = params.toString();
@@ -175,8 +188,8 @@ app.get("/payment/cancel", (req: Request, res: Response) => {
 });
 
 app.get("/payment/fail", (req: Request, res: Response) => {
-  const front = frontendBase();
-  if (shouldRedirectToFrontend(req) && front) {
+  const front = frontendBase(req);
+  if (shouldRedirectToFrontend(req, front)) {
     return res.redirect(302, `${front}/payment/cancel`);
   }
 
