@@ -14,6 +14,7 @@ const withAverageRating = <T extends { reviewsReceived: { rating: number }[] }>(
 
 const getAllTechnicians = async (filters: ITechnicianFilters) => {
   const { skill, location, minExperience, minRating, search } = filters;
+  const skillQuery = typeof skill === 'string' ? skill.trim().toLowerCase() : '';
 
   const technicians = await prisma.user.findMany({
     where: {
@@ -23,7 +24,6 @@ const getAllTechnicians = async (filters: ITechnicianFilters) => {
         email: { contains: search, mode: 'insensitive' },
       }),
       technicianProfile: {
-        ...(skill && { skills: { has: skill } }),
         ...(location && { location: { contains: location, mode: 'insensitive' } }),
         ...(minExperience !== undefined && { experience: { gte: Number(minExperience) } }),
       },
@@ -44,7 +44,24 @@ const getAllTechnicians = async (filters: ITechnicianFilters) => {
     orderBy: { createdAt: 'desc' },
   });
 
-  const withRatings = technicians.map(withAverageRating);
+  let withRatings = technicians.map(withAverageRating);
+
+  // Case-insensitive partial match on skills (and service/category names as fallback).
+  // Prisma `skills: { has }` is exact + case-sensitive, which breaks normal search UX.
+  if (skillQuery) {
+    withRatings = withRatings.filter((technician) => {
+      const profileSkills = technician.technicianProfile?.skills ?? [];
+      if (profileSkills.some((s) => s.toLowerCase().includes(skillQuery))) {
+        return true;
+      }
+
+      return (technician.services ?? []).some((service) => {
+        const name = service.name?.toLowerCase() ?? '';
+        const category = service.category?.name?.toLowerCase() ?? '';
+        return name.includes(skillQuery) || category.includes(skillQuery);
+      });
+    });
+  }
 
   if (minRating !== undefined) {
     return withRatings.filter((t) => t.averageRating >= Number(minRating));
