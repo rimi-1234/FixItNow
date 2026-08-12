@@ -24,3 +24,8 @@ export interface IUpdateProfilePayload {
   phone?: string;
   imageUrl?: string | null;
 }
+
+export interface IGoogleLoginPayload {
+  idToken: string;
+  role?: Role;
+}

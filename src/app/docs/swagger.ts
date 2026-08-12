@@ -75,6 +75,14 @@ Authorization: Bearer <token>
           password: { type: 'string', example: 'Admin@1234' },
         },
       },
+      GoogleLoginRequest: {
+        type: 'object',
+        required: ['idToken'],
+        properties: {
+          idToken: { type: 'string', description: 'Google ID token from OAuth code exchange' },
+          role: { type: 'string', enum: ['CUSTOMER', 'TECHNICIAN'], example: 'CUSTOMER' },
+        },
+      },
       BookingCreate: {
         type: 'object',
         required: ['technicianId', 'serviceId', 'scheduledTime'],
@@ -206,6 +214,35 @@ Authorization: Bearer <token>
         responses: {
           200: { description: 'Login successful, returns accessToken + user info' },
           401: { description: 'Invalid credentials' },
+        },
+      },
+    },
+    '/auth/google': {
+      get: {
+        tags: ['Auth'],
+        summary: 'Start Google OAuth (browser redirect)',
+        parameters: [
+          {
+            name: 'role',
+            in: 'query',
+            schema: { type: 'string', enum: ['CUSTOMER', 'TECHNICIAN'] },
+            description: 'Role for new Google accounts only. Existing users keep their role.',
+          },
+        ],
+        responses: {
+          302: { description: 'Redirects to Google consent screen' },
+        },
+      },
+      post: {
+        tags: ['Auth'],
+        summary: 'Sign in with a Google ID token',
+        requestBody: {
+          required: true,
+          content: { 'application/json': { schema: { $ref: '#/components/schemas/GoogleLoginRequest' } } },
+        },
+        responses: {
+          200: { description: 'Login successful, returns accessToken + user info' },
+          401: { description: 'Invalid Google token' },
         },
       },
     },

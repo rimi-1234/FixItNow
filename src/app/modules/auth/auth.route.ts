@@ -13,6 +13,13 @@ router.post(
   validateRequest(AuthValidation.demoLoginValidationSchema),
   AuthControllers.demoLoginUser
 );
+router.post(
+  '/google',
+  validateRequest(AuthValidation.googleLoginValidationSchema),
+  AuthControllers.googleLogin
+);
+router.get('/google', AuthControllers.googleStart);
+router.get('/google/callback', AuthControllers.googleCallback);
 
 router.get('/me', auth('ADMIN', 'CUSTOMER', 'TECHNICIAN'), AuthControllers.getMe);
 router.patch(

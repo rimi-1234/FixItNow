@@ -18,6 +18,8 @@ export default {
     stripe_secret_key : process.env.STRIPE_SECRET_KEY!,
     stripe_webhook_secret : process.env.STRIPE_WEBHOOK_SECRET!,
     frontend_url: process.env.FRONTEND_URL || process.env.APP_URL || 'http://localhost:5000',
+    google_client_id: process.env.GOOGLE_CLIENT_ID || '',
+    google_client_secret: process.env.GOOGLE_CLIENT_SECRET || '',
     sslcommerz_store_id: process.env.SSLCOMMERZ_STORE_ID!,
     sslcommerz_store_passwd: process.env.SSLCOMMERZ_STORE_PASSWD!,
     sslcommerz_is_live: process.env.SSLCOMMERZ_IS_LIVE === 'true',

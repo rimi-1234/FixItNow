@@ -61,6 +61,13 @@ const demoLoginValidationSchema = z.object({
   }),
 });
 
+const googleLoginValidationSchema = z.object({
+  body: z.object({
+    idToken: z.string().min(20, { message: 'Google id token is required' }),
+    role: z.enum([Role.CUSTOMER, Role.TECHNICIAN]).optional(),
+  }),
+});
+
 const updateProfileValidationSchema = z.object({
   body: z.object({
     name: z
@@ -98,5 +105,6 @@ export const AuthValidation = {
   loginValidationSchema,
   registerValidationSchema,
   demoLoginValidationSchema,
+  googleLoginValidationSchema,
   updateProfileValidationSchema,
 };
