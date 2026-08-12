@@ -53,7 +53,50 @@ const registerValidationSchema = z.object({
     ),
 });
 
+const demoLoginValidationSchema = z.object({
+  body: z.object({
+    role: z.enum([Role.CUSTOMER, Role.TECHNICIAN, Role.ADMIN], {
+      message: 'Role must be CUSTOMER, TECHNICIAN, or ADMIN',
+    }),
+  }),
+});
+
+const updateProfileValidationSchema = z.object({
+  body: z.object({
+    name: z
+      .string()
+      .trim()
+      .min(2, { message: 'Name must be at least 2 characters' })
+      .max(80)
+      .optional()
+      .nullable(),
+    phone: z
+      .string()
+      .trim()
+      .regex(/^[+\d\s()-]{7,20}$/, { message: 'Enter a valid phone number' })
+      .optional()
+      .nullable(),
+    imageUrl: z
+      .string()
+      .trim()
+      .max(2000)
+      .optional()
+      .nullable()
+      .refine(
+        (value) =>
+          value == null ||
+          value === '' ||
+          value.startsWith('/') ||
+          value.startsWith('data:image/') ||
+          /^https?:\/\//i.test(value),
+        { message: 'Image must be a URL, site path, or uploaded image' }
+      ),
+  }),
+});
+
 export const AuthValidation = {
   loginValidationSchema,
   registerValidationSchema,
+  demoLoginValidationSchema,
+  updateProfileValidationSchema,
 };

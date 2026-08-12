@@ -9,4 +9,10 @@ const router = express.Router();
 
 router.post('/', auth(Role.CUSTOMER), validateRequest(ReviewValidation.createReviewValidationSchema), ReviewControllers.createReview);
 
+router.get(
+  '/',
+  validateRequest(ReviewValidation.getLatestReviewsValidationSchema),
+  ReviewControllers.getLatestReviews
+);
+
 export const ReviewRoutes = router;

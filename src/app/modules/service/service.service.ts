@@ -118,8 +118,62 @@ const deleteService = async (technicianId: string, serviceId: string) => {
   return prisma.service.delete({ where: { id: serviceId } });
 };
 
+const getServiceById = async (id: string) => {
+  const service = await prisma.service.findUnique({
+    where: { id },
+    include: {
+      category: true,
+      technician: {
+        select: {
+          id: true,
+          email: true,
+          name: true,
+          technicianProfile: true,
+          reviewsReceived: { select: { rating: true, comment: true, createdAt: true, customer: { select: { id: true, email: true, name: true } } } },
+        },
+      },
+    },
+  });
+  if (!service) throw Object.assign(new Error('Service not found'), { statusCode: 404 });
+
+  const reviews = service.technician.reviewsReceived;
+  const reviewCount = reviews.length;
+  const averageRating = reviewCount
+    ? Number((reviews.reduce((sum: number, r: { rating: number }) => sum + r.rating, 0) / reviewCount).toFixed(2))
+    : 0;
+
+  const { reviewsReceived, ...techRest } = service.technician;
+
+  // Related services by same technician or same category
+  const related = await prisma.service.findMany({
+    where: {
+      id: { not: id },
+      OR: [{ technicianId: service.technicianId }, { categoryId: service.categoryId }],
+    },
+    take: 4,
+    include: {
+      category: true,
+      technician: { select: { id: true, email: true, name: true, technicianProfile: true, reviewsReceived: { select: { rating: true } } } },
+    },
+  });
+
+  const relatedWithRatings = related.map((s) => {
+    const rc = s.technician.reviewsReceived.length;
+    const ar = rc ? Number((s.technician.reviewsReceived.reduce((sum: number, r: { rating: number }) => sum + r.rating, 0) / rc).toFixed(2)) : 0;
+    const { reviewsReceived: _rr, ...rest } = s.technician;
+    return { ...s, technician: { ...rest, averageRating: ar, reviewCount: rc } };
+  });
+
+  return {
+    ...service,
+    technician: { ...techRest, averageRating, reviewCount, reviews },
+    related: relatedWithRatings,
+  };
+};
+
 export const ServiceServices = {
   getAllServices,
+  getServiceById,
   createService,
   updateService,
   deleteService,

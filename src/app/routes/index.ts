@@ -7,6 +7,8 @@ import { BookingRoutes } from '../modules/booking/booking.route.js';
 import { PaymentRoutes } from '../modules/payment/payment.route.js';
 import { ReviewRoutes } from '../modules/review/review.route.js';
 import { AdminRoutes } from '../modules/admin/admin.route.js';
+import { ContactRoutes } from '../modules/contact/contact.route.js';
+import { BlogRoutes } from '../modules/blog/blog.route.js';
 
 const router = express.Router();
 
@@ -42,7 +44,15 @@ const moduleRoutes = [
   {
     path: '/admin',
     route: AdminRoutes,
-  }
+  },
+  {
+    path: '/contact',
+    route: ContactRoutes,
+  },
+  {
+    path: '/blog',
+    route: BlogRoutes,
+  },
 ];
 
 moduleRoutes.forEach((route) => router.use(route.path, route.route));

@@ -1,5 +1,6 @@
 import prisma from '../../../lib/prisma.js';
 import { IReviewCreatePayload } from './review.interface.js';
+import type { IReviewLatestItem } from './review.interface.js';
 
 const httpError = (message: string, statusCode: number) =>
   Object.assign(new Error(message), { statusCode });
@@ -37,6 +38,47 @@ const createReview = async (customerId: string, payload: IReviewCreatePayload) =
   return review;
 };
 
+const getLatestReviews = async (limit: number = 6) => {
+  const safeLimit = Math.max(1, Math.min(24, limit));
+
+  const reviews = await prisma.review.findMany({
+    take: safeLimit,
+    orderBy: { createdAt: 'desc' },
+    where: {
+      // Only show reviews where the related job is completed (defensive)
+      booking: {
+        status: 'COMPLETED',
+      },
+    },
+    include: {
+      customer: {
+        select: { id: true, email: true, name: true },
+      },
+      booking: {
+        select: {
+          id: true,
+        },
+      },
+    },
+  });
+
+  // Normalize to frontend-friendly shape
+  const result: IReviewLatestItem[] = reviews.map((r) => ({
+    id: r.id,
+    rating: r.rating,
+    comment: r.comment ?? null,
+    createdAt: r.createdAt.toISOString(),
+    customer: {
+      id: r.customer.id,
+      email: r.customer.email,
+      name: (r.customer as any).name ?? null,
+    },
+  }));
+
+  return result;
+};
+
 export const ReviewServices = {
   createReview,
+  getLatestReviews,
 };

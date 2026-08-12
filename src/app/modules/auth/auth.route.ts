@@ -8,11 +8,18 @@ const router = express.Router();
 
 router.post('/register', validateRequest(AuthValidation.registerValidationSchema), AuthControllers.registerUser);
 router.post('/login', validateRequest(AuthValidation.loginValidationSchema), AuthControllers.loginUser);
+router.post(
+  '/demo-login',
+  validateRequest(AuthValidation.demoLoginValidationSchema),
+  AuthControllers.demoLoginUser
+);
 
-router.get(
+router.get('/me', auth('ADMIN', 'CUSTOMER', 'TECHNICIAN'), AuthControllers.getMe);
+router.patch(
   '/me',
   auth('ADMIN', 'CUSTOMER', 'TECHNICIAN'),
-  AuthControllers.getMe
+  validateRequest(AuthValidation.updateProfileValidationSchema),
+  AuthControllers.updateProfile
 );
 
 export const AuthRoutes = router;

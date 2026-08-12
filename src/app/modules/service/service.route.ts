@@ -14,6 +14,9 @@ router.get(
   ServiceControllers.getAllServices
 );
 
+// Public single service detail
+router.get('/:id', ServiceControllers.getServiceById);
+
 router.post(
   '/',
   auth(Role.TECHNICIAN),

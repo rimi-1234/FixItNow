@@ -8,6 +8,19 @@ const createReviewValidationSchema = z.object({
   }),
 });
 
+const getLatestReviewsValidationSchema = z.object({
+  query: z.object({
+    limit: z
+      .string()
+      .optional()
+      .transform((v) => (v ? Number(v) : 6))
+      .refine((v) => Number.isFinite(v) && v >= 1 && v <= 24, {
+        message: 'limit must be between 1 and 24',
+      }),
+  }).optional(),
+});
+
 export const ReviewValidation = {
-  createReviewValidationSchema
+  createReviewValidationSchema,
+  getLatestReviewsValidationSchema,
 };

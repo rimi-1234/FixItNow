@@ -8,16 +8,22 @@ const startServer = async () => {
 
   try {
     await ensureDefaults();
-    console.log("Default accounts ready (admin@fixitnow.com / Admin@1234)");
+    if (config.nodeEnv !== 'production') {
+      console.log("Default accounts ready (admin@fixitnow.com / Admin@1234)");
+    }
   } catch (err) {
-    console.error("Failed to ensure default accounts:", err);
+    if (config.nodeEnv !== 'production') {
+      console.error("Failed to ensure default accounts:", err);
+    }
   }
 
   const port = Number(config.port) || 5000;
   app.listen(port, () => {
-    console.log(`FixItNow API server running on port ${port}`);
-    console.log(`Environment: ${config.nodeEnv}`);
-    console.log(`Health check: http://localhost:${port}/health`);
+    if (config.nodeEnv !== 'production') {
+      console.log(`FixItNow API server running on port ${port}`);
+      console.log(`Environment: ${config.nodeEnv}`);
+      console.log(`Health check: http://localhost:${port}/health`);
+    }
   });
 };
 
