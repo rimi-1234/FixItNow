@@ -22,7 +22,10 @@ const httpError = (message: string, statusCode: number) =>
   Object.assign(new Error(message), { statusCode });
 
 export function isGoogleOAuthConfigured() {
-  return Boolean(config.google_client_id && config.google_client_secret);
+  return Boolean(
+    (process.env.GOOGLE_CLIENT_ID || '').trim() &&
+      (process.env.GOOGLE_CLIENT_SECRET || '').trim()
+  );
 }
 
 export function signGoogleOAuthState(payload: Omit<GoogleOAuthState, 'purpose'>) {
@@ -43,8 +46,9 @@ export function readGoogleOAuthState(state: string): GoogleOAuthState {
 }
 
 export function buildGoogleAuthUrl(redirectUri: string, state: string) {
+  const clientId = (process.env.GOOGLE_CLIENT_ID || config.google_client_id || '').trim();
   const params = new URLSearchParams({
-    client_id: config.google_client_id,
+    client_id: clientId,
     redirect_uri: redirectUri,
     response_type: 'code',
     scope: 'openid email profile',
@@ -56,10 +60,12 @@ export function buildGoogleAuthUrl(redirectUri: string, state: string) {
 }
 
 export async function exchangeGoogleCode(code: string, redirectUri: string) {
+  const clientId = (process.env.GOOGLE_CLIENT_ID || config.google_client_id || '').trim();
+  const clientSecret = (process.env.GOOGLE_CLIENT_SECRET || config.google_client_secret || '').trim();
   const body = new URLSearchParams({
     code,
-    client_id: config.google_client_id,
-    client_secret: config.google_client_secret,
+    client_id: clientId,
+    client_secret: clientSecret,
     redirect_uri: redirectUri,
     grant_type: 'authorization_code',
   });
@@ -79,7 +85,8 @@ export async function exchangeGoogleCode(code: string, redirectUri: string) {
 }
 
 export async function verifyGoogleIdToken(idToken: string): Promise<GoogleIdProfile> {
-  if (!config.google_client_id) {
+  const clientId = (process.env.GOOGLE_CLIENT_ID || config.google_client_id || '').trim();
+  if (!clientId) {
     throw httpError('Google sign-in is not configured', 503);
   }
 
@@ -102,7 +109,7 @@ export async function verifyGoogleIdToken(idToken: string): Promise<GoogleIdProf
     throw httpError(payload.error_description || payload.error || 'Google token is invalid', 401);
   }
 
-  if (payload.aud !== config.google_client_id) {
+  if (payload.aud !== clientId) {
     throw httpError('Google token audience mismatch', 401);
   }
 

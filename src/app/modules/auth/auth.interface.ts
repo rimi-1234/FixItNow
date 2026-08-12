@@ -26,6 +26,8 @@ export interface IUpdateProfilePayload {
 }
 
 export interface IGoogleLoginPayload {
-  idToken: string;
+  idToken?: string;
+  code?: string;
+  redirectUri?: string;
   role?: Role;
 }

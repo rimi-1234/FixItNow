@@ -62,10 +62,16 @@ const demoLoginValidationSchema = z.object({
 });
 
 const googleLoginValidationSchema = z.object({
-  body: z.object({
-    idToken: z.string().min(20, { message: 'Google id token is required' }),
-    role: z.enum([Role.CUSTOMER, Role.TECHNICIAN]).optional(),
-  }),
+  body: z
+    .object({
+      idToken: z.string().min(20).optional(),
+      code: z.string().min(10).optional(),
+      redirectUri: z.string().url().optional(),
+      role: z.enum([Role.CUSTOMER, Role.TECHNICIAN]).optional(),
+    })
+    .refine((data) => Boolean(data.idToken) || Boolean(data.code && data.redirectUri), {
+      message: 'Provide a Google id token or authorization code',
+    }),
 });
 
 const updateProfileValidationSchema = z.object({

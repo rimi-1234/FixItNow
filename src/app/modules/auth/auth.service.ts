@@ -4,7 +4,7 @@ import jwt from 'jsonwebtoken';
 import config from '../../../config/index.js';
 import { Prisma, Role } from '@prisma/client';
 import { IGoogleLoginPayload, ILoginPayload, IRegisterPayload, IUpdateProfilePayload } from './auth.interface.js';
-import { verifyGoogleIdToken } from './auth.google.js';
+import { exchangeGoogleCode, verifyGoogleIdToken } from './auth.google.js';
 
 const httpError = (message: string, statusCode: number) =>
   Object.assign(new Error(message), { statusCode });
@@ -158,37 +158,49 @@ const issueAccessToken = (user: { id: string; email: string; role: Role }) =>
     { expiresIn: (config.jwt_access_expires_in || '1d') as any }
   );
 
-const loginWithGoogle = async (payload: IGoogleLoginPayload) => {
-  if (!payload?.idToken) throw httpError('Google id token is required', 400);
+type GoogleUserRow = {
+  id: string;
+  email: string;
+  role: Role;
+  status: string;
+  name: string | null;
+  imageUrl: string | null;
+  googleId?: string | null;
+};
 
-  const profile = await verifyGoogleIdToken(payload.idToken);
+const loginWithGoogle = async (payload: IGoogleLoginPayload) => {
+  let idToken = payload?.idToken;
+  if (!idToken && payload?.code && payload.redirectUri) {
+    idToken = await exchangeGoogleCode(payload.code, payload.redirectUri);
+  }
+  if (!idToken) throw httpError('Google id token is required', 400);
+
+  const profile = await verifyGoogleIdToken(idToken);
   const requestedRole = payload.role === Role.TECHNICIAN ? Role.TECHNICIAN : Role.CUSTOMER;
 
-  let user = await prisma.user.findFirst({
+  let user = (await prisma.user.findFirst({
     where: {
-      OR: [{ googleId: profile.sub }, { email: profile.email }],
-    },
-  });
+      OR: [{ email: profile.email }, { googleId: profile.sub }],
+    } as Prisma.UserWhereInput,
+  })) as GoogleUserRow | null;
 
   if (user) {
     if (user.status === 'BANNED') throw httpError('User is banned', 403);
 
     if (!user.googleId || (!user.name && profile.name) || (!user.imageUrl && profile.picture)) {
-      user = await prisma.user.update({
+      user = (await prisma.user.update({
         where: { id: user.id },
         data: {
-          googleId: user.googleId || profile.sub,
           name: user.name || profile.name || null,
           imageUrl: user.imageUrl || profile.picture || null,
-        },
-      });
+          googleId: user.googleId || profile.sub,
+        } as Prisma.UserUpdateInput,
+      })) as GoogleUserRow;
     }
   } else {
-    user = await prisma.user.create({
+    user = (await prisma.user.create({
       data: {
         email: profile.email,
-        password: null,
-        googleId: profile.sub,
         name: profile.name || null,
         imageUrl: profile.picture || null,
         role: requestedRole,
@@ -202,8 +214,10 @@ const loginWithGoogle = async (payload: IGoogleLoginPayload) => {
                 },
               }
             : undefined,
-      },
-    });
+        password: null,
+        googleId: profile.sub,
+      } as unknown as Prisma.UserCreateInput,
+    })) as GoogleUserRow;
   }
 
   return {
