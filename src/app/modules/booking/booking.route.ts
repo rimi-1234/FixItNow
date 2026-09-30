@@ -13,18 +13,30 @@ router.post(
   validateRequest(BookingValidation.createBookingValidationSchema),
   BookingControllers.createBooking
 );
+
 router.get('/', auth(Role.CUSTOMER), BookingControllers.getUserBookings);
+
+router.get('/technician', auth(Role.TECHNICIAN), BookingControllers.getTechnicianBookings);
+
 router.get(
   '/:id',
-  auth(Role.CUSTOMER),
+  auth(Role.CUSTOMER, Role.TECHNICIAN),
   validateRequest(BookingValidation.bookingIdParamValidationSchema),
   BookingControllers.getBookingDetails
 );
+
 router.patch(
   '/:id/cancel',
-  auth(Role.CUSTOMER),
+  auth(Role.CUSTOMER, Role.TECHNICIAN),
   validateRequest(BookingValidation.bookingIdParamValidationSchema),
   BookingControllers.cancelBooking
+);
+
+router.patch(
+  '/:id/status',
+  auth(Role.TECHNICIAN),
+  validateRequest(BookingValidation.updateStatusValidationSchema),
+  BookingControllers.updateBookingStatus
 );
 
 export const BookingRoutes = router;

@@ -9,6 +9,8 @@ import { ReviewRoutes } from '../modules/review/review.route.js';
 import { AdminRoutes } from '../modules/admin/admin.route.js';
 import { ContactRoutes } from '../modules/contact/contact.route.js';
 import { BlogRoutes } from '../modules/blog/blog.route.js';
+import { NotificationRoutes } from '../modules/notification/notification.route.js';
+import { FavoriteRoutes } from '../modules/favorite/favorite.route.js';
 
 const router = express.Router();
 
@@ -52,6 +54,14 @@ const moduleRoutes = [
   {
     path: '/blog',
     route: BlogRoutes,
+  },
+  {
+    path: '/notifications',
+    route: NotificationRoutes,
+  },
+  {
+    path: '/favorites',
+    route: FavoriteRoutes,
   },
 ];
 

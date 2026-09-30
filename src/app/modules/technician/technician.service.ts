@@ -1,6 +1,8 @@
 import prisma from '../../../lib/prisma.js';
+import { Prisma } from '@prisma/client';
 import { ITechnicianFilters, ITechnicianUpdateProfilePayload } from './technician.interface.js';
 import { BookingStatus } from '@prisma/client';
+import { createMany } from '../notification/notification.service.js';
 
 const withAverageRating = <T extends { reviewsReceived: { rating: number }[] }>(technician: T) => {
   const { reviewsReceived, ...rest } = technician;
@@ -200,7 +202,7 @@ const updateBookingStatus = async (
     throw Object.assign(new Error(message), { statusCode: 400 });
   }
 
-  return prisma.booking.update({
+  const updated = await prisma.booking.update({
     where: { id: bookingId },
     data: { status },
     include: {
@@ -208,6 +210,54 @@ const updateBookingStatus = async (
       service: true,
     },
   });
+
+  // Record booking event
+  await prisma.bookingEvent.create({
+    data: {
+      bookingId,
+      eventType: `BOOKING_${status}`,
+      actorId: technicianId,
+      metadata: Prisma.JsonNull,
+    },
+  });
+
+  // Send notification to customer
+  const serviceName = updated.service?.name ?? 'service';
+  const ref = booking.referenceNumber ?? bookingId.slice(0, 8);
+
+  const notifMap: Record<string, { title: string; body: string } | undefined> = {
+    ACCEPTED: {
+      title: 'Booking Accepted',
+      body: `Your booking #${ref} for "${serviceName}" has been accepted.`,
+    },
+    DECLINED: {
+      title: 'Booking Declined',
+      body: `Your booking #${ref} for "${serviceName}" was declined. You can rebook another technician.`,
+    },
+    IN_PROGRESS: {
+      title: 'Work Started',
+      body: `Your technician has started work on booking #${ref}.`,
+    },
+    COMPLETED: {
+      title: 'Booking Completed',
+      body: `Booking #${ref} for "${serviceName}" is complete. Please leave a review!`,
+    },
+  };
+
+  const notif = notifMap[status];
+  if (notif) {
+    await createMany([
+      {
+        userId: booking.customerId,
+        type: `BOOKING_${status}` as never,
+        title: notif.title,
+        body: notif.body,
+        actionUrl: `/dashboard/customer/bookings/${bookingId}`,
+      },
+    ]);
+  }
+
+  return updated;
 };
 
 export const TechnicianServices = {

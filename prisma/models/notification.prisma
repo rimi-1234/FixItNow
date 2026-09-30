@@ -1,0 +1,42 @@
+model Notification {
+  id        String    @id @default(uuid())
+  userId    String
+  type      String
+  title     String
+  body      String
+  actionUrl String?
+  readAt    DateTime?
+  createdAt DateTime  @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, readAt])
+  @@map("notifications")
+}
+
+model BookingEvent {
+  id        String   @id @default(uuid())
+  bookingId String
+  eventType String
+  actorId   String?
+  metadata  Json?
+  createdAt DateTime @default(now())
+
+  booking Booking @relation(fields: [bookingId], references: [id], onDelete: Cascade)
+
+  @@index([bookingId])
+  @@map("booking_events")
+}
+
+model FavoriteTechnician {
+  id           String   @id @default(uuid())
+  customerId   String
+  technicianId String
+  createdAt    DateTime @default(now())
+
+  customer   User @relation("CustomerFavorites", fields: [customerId], references: [id], onDelete: Cascade)
+  technician User @relation("TechnicianFavoritedBy", fields: [technicianId], references: [id], onDelete: Cascade)
+
+  @@unique([customerId, technicianId])
+  @@map("favorite_technicians")
+}
